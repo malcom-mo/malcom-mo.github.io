@@ -1,0 +1,31 @@
+title: Malcom Mohamed
+url: https://mal.com.de
+name: Malcom Mohamed
+email: m@mal.com.de
+
+repository: malcom-mo/malcom-mo.github.io
+
+markdown: kramdown
+highlighter: rouge
+
+sass:
+  style: compressed
+  quiet_deps: true
+  silence_deprecations: [import]
+
+kramdown:
+  input: GFM
+  math_engine: mathjax
+  parse_block_html: true
+
+theme: minima
+
+minima:
+  skin: auto
+  date_format: "%d %b %Y"
+
+github_username: malcom-mo
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
