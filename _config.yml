@@ -2,6 +2,7 @@ title: Malcom Mohamed
 url: https://mal.com.de
 name: Malcom Mohamed
 email: m@mal.com.de
+permalink: /:title/
 
 repository: malcom-mo/malcom-mo.github.io
 
@@ -16,6 +17,9 @@ sass:
 kramdown:
   input: GFM
   math_engine: mathjax
+  math_engine_opts:
+    preview: true
+    preview_as_code: true
   parse_block_html: true
 
 theme: minima
@@ -29,3 +33,4 @@ github_username: malcom-mo
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
+  - jemoji
