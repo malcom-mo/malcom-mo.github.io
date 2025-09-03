@@ -40,7 +40,7 @@ x_i \mapsto x^{(\deg_1(f) + \deg_1(g) +1) \cdots (\deg_{i-1}(f) + \deg_{i-1}(g) 
 \end{equation}
 
 For the AMT-Hyperproof equivalence to work, I am assuming that we use Hyperproofs with roots of untiy as well.
-Specifically, instead of interpolating over $\{0,1\}^m$, I am thinking of a variant of Hyperproofs where our multilinear polynomial $f$ is interpolated over the set $D = \{(w^i, w^{2i}, \dots, w^{2^{m-1} i}) \mid i \in [0, 2^m-1]\}.$
+Specifically, instead of interpolating over $\\{0,1\\}^m$, I am thinking of a variant of Hyperproofs where our multilinear polynomial $f$ is interpolated over the set $D = \\{(w^i, w^{2i}, \dots, w^{2^{m-1} i}) \mid i \in [0, 2^m-1]\\}.$
 Here, $w$ is the primitive $2^m$th root of unity.
 For points of this form, the PST/Hyperproofs opening identity is
 $$\begin{align}\tag{3}
@@ -49,7 +49,7 @@ f - f(w^i, \dots, w^{2^{m-1} i}) = \sum_{j \in [m]} q_j \cdot (x_j - w^{2^{j-1} 
 By inspecting the degrees, $q_j$ cannot depend on $x_j$.
 In fact, if the $q_j$ are computed iteratively, starting with $q_m$, then $q_j$ is linear in $x_1, \dots, x_{j-1}$ and does not depend on $x_j, \dots, x_m$.
 
-Now, let’s look at AMT proofs when interpolating the same vector as in Hyperproofs with a univariate polynomial $u$ over the roots of unity $\{w^i \mid i \in [0,2^m-1]\}$.
+Now, let’s look at AMT proofs when interpolating the same vector as in Hyperproofs with a univariate polynomial $u$ over the roots of unity $\\{w^i \mid i \in [0,2^m-1]\\}$.
 The crucial observation is that the multilinear $f$ from Hyperproofs and the univariate $u$ have the same coefficient vector, $u = \uni(f)$.
 Indeed, if $u = \sum_{k \in [0,2^m-1]} c_k x^k$, then the bit decomposition of $k$ gives
 
@@ -103,9 +103,9 @@ So, in order to compute a commitment $[q(\tau)]$ from the elements from the AMT 
 ## Aggregating Hyperproofs :thinking:
 As Hyperproofs uses PST and multi-point openings for PST are given by Boomy, one might wonder whether multiple Hyperproofs can be compressed down to Boomy proofs.
 [For an introduction to Boomy, also see my previous post]({% link _posts/2025-06-11-boomy.md %}).
-In one sentence, a Boomy proof for $k$ points $V = \{v_1, \dots, v_k\} \subset \{0,1\}^m$ consists of commitments to quotients that prove the divisibility of our committed polynomial by the reduced Gröbner basis of the ideal of $V$.
-However, Gröbner bases for size-$k$ subsets of $\{0,1\}^m$ can get somewhat complicated.
-For example, the following Sage code outputs a Gröbner basis of 10 elements for 5 points in $\{0,1\}^4$:
+In one sentence, a Boomy proof for $k$ points $V = \\{v_1, \dots, v_k\\} \subset \\{0,1\\}^m$ consists of commitments to quotients that prove the divisibility of our committed polynomial by the reduced Gröbner basis of the ideal of $V$.
+However, Gröbner bases for size-$k$ subsets of $\\{0,1\\}^m$ can get somewhat complicated.
+For example, the following Sage code outputs a Gröbner basis of 10 elements for 5 points in $\\{0,1\\}^4$:
 ```python
 from functools import reduce
 
@@ -123,8 +123,8 @@ print(G)
 *Note: The code had to describe $I(V)$, which is normally thought of as the intersection of the point ideals.
 But because the point ideals are maximal, their intersection is the same as their product.*
 
-To avoid such big Gröbner bases, it turns out we can just change our interpolation set from $\{0,1\}^m$ to another.
-For example, let’s go back to the Hyperproofs variant that produces AMT proofs under Kronecker substitution and interpolate over $$D = \left\{\left(w^i, w^{2i}, \dots, w^{2^{m-1} i}\right)\right\}.$$
+To avoid such big Gröbner bases, it turns out we can just change our interpolation set from $\\{0,1\\}^m$ to another.
+For example, let’s go back to the Hyperproofs variant that produces AMT proofs under Kronecker substitution and interpolate over $$D = \left\\{\left(w^i, w^{2i}, \dots, w^{2^{m-1} i}\right)\right\\}.$$
 What is so special about $D$?
 It turns out that the fact that all points in $D$ differ in the first coordinate forces a simple structure for the reduced Gröbner basis of the ideal of any subset $V \subseteq D$.
 Namely, let $g_1(x_1)$ vanish on the first coordinates, $g_1 = \prod_{v \in V} (x_1-v_1)$, and let $g_i(x_1)$ interpolate the $i$th coordinates over the first coordinates, $g_i(v_1) = v_i$ for all $v \in V, i \in [2,m]$.
@@ -141,34 +141,34 @@ We can now make a similar argument as we did for AMT-to-KZG compression.
 Namely, that the Hyperproofs tree does not help to produce Boomy proofs efficiently because of too high degrees.
 
 Let's start by computing the expressions of the desired multi-point quotients $Q_1, \dots, Q_m$.
-We start from $f = \sum_{i_1, \dots, i_m \in \{0,1\}} c_{i_1\cdots i_m} x_1^{i_1} \cdots x_m^{i_m}$ and use the fact that the quotients can be obtained by iterated Euclidean division.
+We start from $f = \sum_{i_1, \dots, i_m \in \\{0,1\\}} c_{i_1\cdots i_m} x_1^{i_1} \cdots x_m^{i_m}$ and use the fact that the quotients can be obtained by iterated Euclidean division.
 Starting with $Q_m$, we write $f = r_m + Q_m \cdot (x_m-g_m)$.
 Since $r_m$ here is the remainder of $f$ when dividing by $x_m-g_m$, we have $r_m = f(x_1, \dots, x_{m-1}, g_m)$.
 Then,
 
 $$\begin{align}
-f-r_m &= \sum_{i_1, \dots, i_m \in \{0,1\}} c_{i_1 \cdots i_m} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m^{i_m} - g_m^{i_m}) \\
-&= \sum_{i_1, \dots, i_{m-1} \in \{0,1\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m - g_m)
+f-r_m &= \sum_{i_1, \dots, i_m \in \\{0,1\\}} c_{i_1 \cdots i_m} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m^{i_m} - g_m^{i_m}) \\
+&= \sum_{i_1, \dots, i_{m-1} \in \\{0,1\\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m - g_m)
 \end{align}$$
 
 and
 
-$$Q_m = \frac{f-r_m}{x_m-g_m} = \sum_{i_1, \dots, i_{m-1} \in \{0,1\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}}.$$
+$$Q_m = \frac{f-r_m}{x_m-g_m} = \sum_{i_1, \dots, i_{m-1} \in \\{0,1\\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}}.$$
 
 We continue and divide $r_m$ by $x_{m-1}-g_{m-1}$, getting remainder $r_{m-1} = f(x_1, \dots, x_{m-2}, g_{m-1}, g_m)$ for which it holds that
 
 $$\begin{align}
-r_m-r_{m-1} &= \sum_{i_1, \dots, i_{m} \in \{0,1\}} c_{i_1 \cdots i_{m}} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}^{i_{m-1}}-g_{m-1}^{i_{m-1}}) g_m^{i_m} \\
-&= \sum_{i_1, \dots, i_{m-2}, i_m \in \{0,1\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}-g_{m-1}) g_m^{i_m}.
+r_m-r_{m-1} &= \sum_{i_1, \dots, i_{m} \in \\{0,1\\}} c_{i_1 \cdots i_{m}} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}^{i_{m-1}}-g_{m-1}^{i_{m-1}}) g_m^{i_m} \\
+&= \sum_{i_1, \dots, i_{m-2}, i_m \in \\{0,1\\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}-g_{m-1}) g_m^{i_m}.
 \end{align}$$
 
 Similarly to the case above, this shows that
 
-$$Q_{m-1} = \sum_{i_1, \dots, i_{m-2}, i_m \in \{0,1\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} g_m^{i_m}.$$
+$$Q_{m-1} = \sum_{i_1, \dots, i_{m-2}, i_m \in \\{0,1\\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} g_m^{i_m}.$$
 
 Continuing these calculations, for $j \in [2,m]$ we get
 
-$$Q_j = \sum_{i_1, \dots, i_{j-1}, i_{j+1}, \dots, i_m \in \{0,1\}} c_{i_1 \cdots i_{j-1} 1 i_{j+1} \cdots i_m} x_1^{i_1} \cdots x_{j-1}^{i_{j-1}} g_{j+1}^{i_{j+1}} \cdots g_m^{i_m}.$$
+$$Q_j = \sum_{i_1, \dots, i_{j-1}, i_{j+1}, \dots, i_m \in \\{0,1\\}} c_{i_1 \cdots i_{j-1} 1 i_{j+1} \cdots i_m} x_1^{i_1} \cdots x_{j-1}^{i_{j-1}} g_{j+1}^{i_{j+1}} \cdots g_m^{i_m}.$$
 
 Finally, the univariate $r_2 = f(x_1, g_2, \dots, g_m)$ gets divided by $g_1$.
 The resulting remainder is the unique univariate polynomial of degree less than $\deg(g_1)$ that agrees with $r_2$ at the points where $g_1$ vanishes, that is, on the first coordinates $v_1$ of all $v \in V$.

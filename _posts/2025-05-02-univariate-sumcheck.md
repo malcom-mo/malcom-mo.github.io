@@ -54,7 +54,7 @@ A priori, I'd take this as ample grounds to guess that univariate polynomials sh
 
 
 ## Notations
-Let $H$ be the multiplicative subgroup that consists of the $2^m$th roots of unity $\{1, w, \dots, w^{2^m-1}\}$.
+Let $H$ be the multiplicative subgroup that consists of the $2^m$th roots of unity $\\{1, w, \dots, w^{2^m-1}\\}$.
 If $U$ is a univariate polynomial in $x$, the coefficient before $x^i$ is denoted as $U[i]$.
 If $M$ is an $m$-variate polynomial in $x_1, \dots, x_m$, the coefficient before $x_1^{i_1} \cdots x_m^{i_m}$ is denoted as $M[i]$, where $i$ is the integer with digit decomposition $i_1, \dots, i_m$ where $i_1$ is the least significant digit (in [mixed-radix](https://en.wikipedia.org/wiki/Mixed_radix), ie,
 $i = \sum_{j \in [m]} i_j \cdot \prod_{k \in [j-1]} (\deg_{x_k}(M)+1)$).
@@ -83,8 +83,8 @@ Denoting the witness vector (effectively the satisfying assignment for the const
 
 |                      | Evaluated multilinear          | Required  oracle |
 |-|-|-|
-|Gemini-1 + Gemini-2 | $\mlex_{\{\pm 1\}^m}(v)$  | $\uni(\mlex_{\{\pm 1\}^m}(v))$
-|Spartan + HyperKZG | $\mlex_{\{0,1\}^m}(v)$      | $\uni(v)$
+|Gemini-1 + Gemini-2 | $\mlex_{\\{\pm 1\\}^m}(v)$  | $\uni(\mlex_{\\{\pm 1\\}^m}(v))$
+|Spartan + HyperKZG | $\mlex_{\\{0,1\\}^m}(v)$      | $\uni(v)$
 |Gabizon et al.             | none (explicitly)                  | $\unex(v)$
 |My protocols              | $\mlin(\unex(v))$                | $\unex(v)$
 

@@ -37,7 +37,7 @@ window.MathJax = {
   async
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
-<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"i/vIzn/A275aTYHY5S4jMj/RwRR8g2hkL6bC2zBfi+m/hRW4gQZy1xmguuUPc/oRdfuY1lEkJo/UeaCCg502Cw=="}</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"MjznoQ1aRW1HFQbz4yTLjFzLJ1ZJmM/aJmstcVHkbwBPxoRJBtJBWe/jm/60k1e3XAeO7t1mWJyhBX6VY+bzCw=="}</script>
 </head>
 <body><header class="site-header" role="banner">
 
@@ -132,7 +132,7 @@ Equivalence modulo $J$ is the same as equivalence modulo $g$.</li>
 <h2 id="pst-and-boomy">PST and Boomy</h2>
 <p>Ok, now, let’s apply the theory described so far to explain multivariate quotienting.
 First, how to generalize KZG openings to multivariates?
-Based on the above, a quotient proof for $f(v_1, \dots, v_m)=0$ has to express $f$ as a combination of the elements of the reduced Gröbner basis for the ideal of the single-point variety $V = {(v_1, \dots, v_m)}$.
+Based on the above, a quotient proof for $f(v_1, \dots, v_m)=0$ has to express $f$ as a combination of the elements of the reduced Gröbner basis for the ideal of the single-point variety $V = \{(v_1, \dots, v_m)\}$.
 To find the Gröbner basis, consider the polynomials $g_1 = x_1 - v_1, \dots, g_m = x_m - v_m$ and put $J = \langle g_1, \dots, g_m \rangle$.
 Clearly, $J \subseteq I(V)$ because everything in $J$ vanishes on $V$.
 But $J$ is actually maximal, which implies $J = I(V)$.
@@ -148,13 +148,13 @@ But still, it is worth looking for sets of points where the Gröbner basis is pa
 <p>The Boomy paper mentions two classes of sets of points $V$ whose ideals have “nice” Gröbner bases.
 One of them is the Cartesian product $V = V_1 \times \cdots \times V_m$ where $V_1, \dots, V_m \subset F$.
 The reduced Gröbner basis simply consists of $g_1, \dots, g_m$ where $g_i = \prod_{v \in V_i} (x-v)$, so each $g_i$ is the vanishing polynomial of $V_i$.
-This class is interesting because it includes hypercubes like ${0,1}^m$ and ${\pm 1}^m$.
+This class is interesting because it includes hypercubes like $\{0,1\}^m$ and $\{\pm 1\}^m$.
 To show that a polynomial vanishes over the whole hypercube, protocols like <a href="https://eprint.iacr.org/2019/550.pdf">Spartan</a> use the sumcheck protocol.
 We now know how to do the same thing with quotients: show divisibility by the reduced Gröbner basis of $I(V)$.</p>
 
 <p>Conceptually, this generalizes the univariate Aurora Hadamard/rowcheck technique, though it seems computationally more expensive.
-For example, consider $m$-linear polynomials $f,g,h$ for which we want to show that $fg \equiv h$ over ${0,1}^m.$
-Equivalently, $f(x)g(x) = h(x) + \sum_{i \in [m]} q_i(x) (x_i^2-x_i)$ for some $q_i$ because ${x_i^2-x_i}$ is the reduced Gröbner basis of $I({0,1}^m)$.
+For example, consider $m$-linear polynomials $f,g,h$ for which we want to show that $fg \equiv h$ over $\{0,1\}^m.$
+Equivalently, $f(x)g(x) = h(x) + \sum_{i \in [m]} q_i(x) (x_i^2-x_i)$ for some $q_i$ because $\{x_i^2-x_i\}$ is the reduced Gröbner basis of $I(\{0,1\}^m)$.
 Because the left-hand side has degree 2 in each $x_i$, $q_i$ cannot depend on $x_i$ at all.
 Moreoever, it is possible to compute the $q_i$ incrementally, say, starting with $q_m$, so that $q_i$ has degree 2 in $x_1, \dots, x_{i-1}$ and degree 1 in $x_{i+1}, \dots, x_m$.
 So $q_i$ is described by $3^{i-1} \cdot 2^{m-i}$ coefficients – or can maybe be interpolated from as many evaluations.

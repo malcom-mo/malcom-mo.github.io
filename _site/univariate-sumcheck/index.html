@@ -37,7 +37,7 @@ window.MathJax = {
   async
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
-<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"1Zo1wJo7q8s2cN0/7nR0chvsdN5zFNXT+4DOUFNCgtC46N9a2UYxVOhjV96vgriAluUPJRZ74rFn0oCnNOoqCw=="}</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"9yty4dr5oSdOVLVZhXE0G1oXrMMFB8XospjcoWOa1njB6YRlFkcHQZAHuJSH2OKC3xktCBqcMQiwwTFSCL17Dg=="}</script>
 </head>
 <body><header class="site-header" role="banner">
 
@@ -123,7 +123,7 @@ Finally, univariate polynomials are used in the Reed-Solomon code, which is a gr
 <p>A priori, I’d take this as ample grounds to guess that univariate polynomials should have some kind of analogue of the sumcheck protocol – because… well, why shouldn’t they? <img class="emoji" title=":shrug:" alt=":shrug:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f937.png" height="20" width="20"></p>
 
 <h2 id="notations">Notations</h2>
-<p>Let $H$ be the multiplicative subgroup that consists of the $2^m$th roots of unity ${1, w, \dots, w^{2^m-1}}$.
+<p>Let $H$ be the multiplicative subgroup that consists of the $2^m$th roots of unity $\{1, w, \dots, w^{2^m-1}\}$.
 If $U$ is a univariate polynomial in $x$, the coefficient before $x^i$ is denoted as $U[i]$.
 If $M$ is an $m$-variate polynomial in $x_1, \dots, x_m$, the coefficient before $x_1^{i_1} \cdots x_m^{i_m}$ is denoted as $M[i]$, where $i$ is the integer with digit decomposition $i_1, \dots, i_m$ where $i_1$ is the least significant digit (in <a href="https://en.wikipedia.org/wiki/Mixed_radix">mixed-radix</a>, ie,
 $i = \sum_{j \in [m]} i_j \cdot \prod_{k \in [j-1]} (\deg_{x_k}(M)+1)$).
@@ -189,12 +189,12 @@ Denoting the witness vector (effectively the satisfying assignment for the const
   <tbody>
     <tr>
       <td>Gemini-1 + Gemini-2</td>
-      <td>$\mlex_{{\pm 1}^m}(v)$</td>
-      <td>$\uni(\mlex_{{\pm 1}^m}(v))$</td>
+      <td>$\mlex_{\{\pm 1\}^m}(v)$</td>
+      <td>$\uni(\mlex_{\{\pm 1\}^m}(v))$</td>
     </tr>
     <tr>
       <td>Spartan + HyperKZG</td>
-      <td>$\mlex_{{0,1}^m}(v)$</td>
+      <td>$\mlex_{\{0,1\}^m}(v)$</td>
       <td>$\uni(v)$</td>
     </tr>
     <tr>

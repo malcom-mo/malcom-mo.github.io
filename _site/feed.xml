@@ -1,23 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.10.0">Jekyll</generator><link href="https://mal.com.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://mal.com.de/" rel="alternate" type="text/html" /><updated>2025-09-03T23:01:18+02:00</updated><id>https://mal.com.de/feed.xml</id><title type="html">Malcom Mohamed</title><entry><title type="html">Towards More General Signature-Based Syncing</title><link href="https://mal.com.de/signature-based-syncing/" rel="alternate" type="text/html" title="Towards More General Signature-Based Syncing" /><published>2025-08-19T00:00:00+02:00</published><updated>2025-08-19T00:00:00+02:00</updated><id>https://mal.com.de/signature-based-syncing</id><content type="html" xml:base="https://mal.com.de/signature-based-syncing/"><![CDATA[<p>This post outlines a preliminary follow-up research idea for <a href="/light-client/">our light client protocol</a>.
-Let’s see if the signature-based design can be taken further! :thinking:</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.10.0">Jekyll</generator><link href="https://mal.com.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://mal.com.de/" rel="alternate" type="text/html" /><updated>2025-09-03T23:49:45+02:00</updated><id>https://mal.com.de/feed.xml</id><title type="html">Malcom Mohamed</title><entry><title type="html">Towards More General Signature-Based Syncing</title><link href="https://mal.com.de/signature-based-syncing/" rel="alternate" type="text/html" title="Towards More General Signature-Based Syncing" /><published>2025-08-19T00:00:00+02:00</published><updated>2025-08-19T00:00:00+02:00</updated><id>https://mal.com.de/signature-based-syncing</id><content type="html" xml:base="https://mal.com.de/signature-based-syncing/"><![CDATA[This post outlines a preliminary follow-up research idea for [our light client protocol]({% link _posts/2025-07-29-light-client.md %}).
+Let's see if the signature-based design can be taken further! :thinking:
 
-<h2 id="the-problem">The problem</h2>
-<p>In the <a href="https://arxiv.org/abs/2410.03347">paper</a> and in <a href="/light-client/">the prior post</a>, we made the simplifying assumption that there is a long-running static subset of validators in the committee.
+
+## The problem
+In the [paper](https://arxiv.org/abs/2410.03347) and in [the prior post]({% link _posts/2025-07-29-light-client.md %}), we made the simplifying assumption that there is a long-running static subset of validators in the committee.
 That is, there is a guaranteed quorum that is authorized to (and does) sign a long run of consecutive epoch transitions.
-As such, the protocol based on transitive signatures cannot support fully dynamic committees without such a static quorum.</p>
+As such, the protocol based on transitive signatures cannot support fully dynamic committees without such a static quorum.
 
-<p>But what if this assumption doesn‘t hold, like for Ethereum’s sync committees?
-Can we have a similarly simple signature-based protocol for <em>arbitrary cross-committee syncing</em>?</p>
+But what if this assumption doesn‘t hold, like for Ethereum’s sync committees?
+Can we have a similarly simple signature-based protocol for *arbitrary cross-committee syncing*?
 
-<h2 id="reducing-scope">Reducing scope</h2>
-<p>This seems like a tough problem, so let’s first go to a reduced special case where committees have size 1.
+
+## Reducing scope
+This seems like a tough problem, so let’s first go to a reduced special case where committees have size 1.
 That is, we are now looking at standard certificate chains.
 For example, Alice may sign Bob’s public key, Bob may sign Charlie’s and Charlie may sign Davy’s so that a verifier who only knows and trusts Alice’s public key can walk along the chain and have confidence in any Davy-signature.
 If the chain grows to length $m$, the verifier needs to download all $m$ intermediary signatures and public keys.
-So the problem statement for now is: devise a signature scheme for signing public keys so that a certificate chain is verifiable in $O(1)$.</p>
+So the problem statement for now is: devise a signature scheme for signing public keys so that a certificate chain is verifiable in $O(1)$.
 
-<p>I searched Google Scholar and could not find this functionality anywhere in the literature.
-The closest notion seems to be from <a href="https://eprint.iacr.org/2008/037.pdf">this paper</a> where the parties run interactive protocols with each other and some central authority, while I’d rather try to aim for a non-interactive process.
+I searched Google Scholar and could not find this functionality anywhere in the literature.
+The closest notion seems to be from [this paper](https://eprint.iacr.org/2008/037.pdf) where the parties run interactive protocols with each other and some central authority, while I'd rather try to aim for a non-interactive process.
 $\newcommand{\KeyGen}{\mathsf{KeyGen}}
 \newcommand{\Sign}{\mathsf{Sign}}
 \newcommand{\Combine}{\mathsf{Combine}}
@@ -26,291 +28,223 @@ $\newcommand{\KeyGen}{\mathsf{KeyGen}}
 \newcommand{\sk}{\mathsf{sk}}
 \newcommand{\Alice}{\mathsf{Alice}}
 \newcommand{\Bob}{\mathsf{Bob}}
-\newcommand{\Charlie}{\mathsf{Charlie}}$</p>
+\newcommand{\Charlie}{\mathsf{Charlie}}$
 
-<h2 id="ad-hoc-solution-idea">Ad-hoc solution idea</h2>
-<p>As an exercise, I tried coming up with a new scheme. :slightly_smiling_face: 
+
+## Ad-hoc solution idea
+As an exercise, I tried coming up with a new scheme. :slightly_smiling_face: 
 To start, I find it helps to view the entire certificate chain that authorizes Davy‘s public key as a single object.
-Namely, it is a single Alice-signature over Davy‘s key – it just happened to be iteratively derived via the intermediary signers Bob and Charlie.
-Stated like this, we‘re looking for the following kind of interface:</p>
-<ul>
-  <li>$\KeyGen() \Rightarrow \sk, \pk$</li>
-  <li>$\Sign(\sk_{\Alice}, \pk_{\Bob}) \Rightarrow \sigma_{AB}$
-    <ul>
-      <li>$\Sign$ might take additional arguments like the previous signature $\sigma_{XA}$ in an ongoing chain.</li>
-    </ul>
-  </li>
-  <li>$\Combine(\sigma_{AB}, \sigma_{BC}) \Rightarrow \sigma_{AC}$</li>
-  <li>$\Verify(\pk_{\Alice}, \pk_Z, \sigma_{AZ}) \Rightarrow 0/1$
-    <ul>
-      <li>Might also take, eg, the previous signature $\sigma_{XA}$ in an ongoing chain.</li>
-    </ul>
-  </li>
-</ul>
+Namely, it is a single Alice-signature over Davy‘s key -- it just happened to be iteratively derived via the intermediary signers Bob and Charlie.
+Stated like this, we‘re looking for the following kind of interface:
+- $\KeyGen() \Rightarrow \sk, \pk$
+- $\Sign(\sk_{\Alice}, \pk_{\Bob}) \Rightarrow \sigma_{AB}$
+    - $\Sign$ might take additional arguments like the previous signature $\sigma_{XA}$ in an ongoing chain.
+- $\Combine(\sigma_{AB}, \sigma_{BC}) \Rightarrow \sigma_{AC}$
+- $\Verify(\pk_{\Alice}, \pk_Z, \sigma_{AZ}) \Rightarrow 0/1$
+    - Might also take, eg, the previous signature $\sigma_{XA}$ in an ongoing chain.
 
-<p>Security needs to be defined similarly to transitive signatures, with an adversary unable to output a signature $\sigma_{AZ}$ if the <em>certification graph</em> contains no path from Alice to Z.
-For this sketch of the idea, I will not even worry about the details like how to model the adversary’s oracle access here.</p>
+Security needs to be defined similarly to transitive signatures, with an adversary unable to output a signature $\sigma_{AZ}$ if the *certification graph* contains no path from Alice to Z.
+For this sketch of the idea, I will not even worry about the details like how to model the adversary’s oracle access here.
 
-<h3 id="construction">Construction</h3>
-<p>How could Bob‘s signature be used to transform Alice‘s signature over Bob‘s pk into a signature over Charlie‘s pk?
+### Construction
+How could Bob‘s signature be used to transform Alice‘s signature over Bob‘s pk into a signature over Charlie‘s pk?
 To start, I had the vague intuition that Alice‘s signature probably somehow needs to incorporate a shared secret with Bob.
 With a scheme based on discrete logarithms, naturally enough, this might be a Diffie-Hellman secret.
 Next, for the Combine function to output short signatures, a pairing-based scheme seems appropriate.
-After going through a bit of literature, I started thinking that <a href="https://www.iacr.org/archive/eurocrypt2006/40040472/40040472.pdf">the way sequential aggregation works for Waters signatures</a> looks like it can be made compatible with embedded Diffie-Hellman secrets.
-While skimming over such papers, ie, <a href="https://arxiv.org/pdf/0802.1113">this one in particular</a>, I found it especially interesting to see how Waters signatures have previously been modified for <em>different</em> extra signing properties.</p>
+After going through a bit of literature, I started thinking that [the way sequential aggregation works for Waters signatures](https://www.iacr.org/archive/eurocrypt2006/40040472/40040472.pdf) looks like it can be made compatible with embedded Diffie-Hellman secrets.
+While skimming over such papers, ie, [this one in particular](https://arxiv.org/pdf/0802.1113), I found it especially interesting to see how Waters signatures have previously been modified for *different* extra signing properties.
 
-<p>Let $G, \hat{G}, G_T$ be groups of prime order $p$ with a bilinear pairing $e : G \times \hat{G} \rightarrow G_T$ and generators $g \in G, \hat{g} \in \hat{G}$.
-Here is the construction I came up with, in additive notation:</p>
-<ul>
-  <li>$\KeyGen()$:
-    <ul>
-      <li>Pick random exponents $a, r \in \mathbb{Z}_p^*$</li>
-      <li>$\sk_\Alice = (a, a \cdot g, r)$</li>
-      <li>$\pk_\Alice = (a \cdot \hat{g}, r a \cdot g, r \cdot g)$</li>
-    </ul>
-  </li>
-  <li>$\Sign(\sk_{\Alice}, \pk_{\Bob}, \sigma_{XA})$:
-    <ul>
-      <li>If $\sigma_{XA}$ is empty (there is no ongoing chain), set $\sigma_{XA,2}=g$</li>
-      <li>Pick random exponent $r’$</li>
-      <li>$\sigma_1 = a \cdot \sigma_{XA,2} - r’ \cdot \pk_{\Bob, 2}$</li>
-      <li>$\sigma_2 = r’ \cdot \pk_{\Bob, 3}$</li>
-      <li>$\sigma_{AB} = (\sigma_1, \sigma_2)$</li>
-    </ul>
-  </li>
-  <li>$\Combine(\sigma_{AB}, \sigma_{BC})$:
-    <ul>
-      <li>$\sigma_1 = \sigma_{AB,1} + \sigma_{BC, 1}$</li>
-      <li>$\sigma_2 = \sigma_{BC, 2}$</li>
-      <li>$\sigma_{AC} = (\sigma_1, \sigma_2)$</li>
-    </ul>
-  </li>
-  <li>$\Verify(\pk_{\Alice}, \pk_Z, \sigma_{AZ}, \sigma_{XA})$:
-    <ul>
-      <li>$e(\sigma_{AZ, 1}, \hat{g}) =^? e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(\sigma_{AZ,2}, \pk_{\Bob, 1})$</li>
-    </ul>
-  </li>
-</ul>
+Let $G, \hat{G}, G_T$ be groups of prime order $p$ with a bilinear pairing $e : G \times \hat{G} \rightarrow G_T$ and generators $g \in G, \hat{g} \in \hat{G}$.
+Here is the construction I came up with, in additive notation:
+- $\KeyGen()$:
+	- Pick random exponents $a, r \in \mathbb{Z}_p^*$
+	- $\sk_\Alice = (a, a \cdot g, r)$
+	- $\pk_\Alice = (a \cdot \hat{g}, r a \cdot g, r \cdot g)$
+- $\Sign(\sk_{\Alice}, \pk_{\Bob}, \sigma_{XA})$:
+    - If $\sigma_{XA}$ is empty (there is no ongoing chain), set $\sigma_{XA,2}=g$
+	- Pick random exponent $r’$
+	- $\sigma_1 = a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2}$
+	- $\sigma_2 = r' \cdot \pk_{\Bob, 3}$
+	- $\sigma_{AB} = (\sigma_1, \sigma_2)$
+- $\Combine(\sigma_{AB}, \sigma_{BC})$:
+	- $\sigma_1 = \sigma_{AB,1} + \sigma_{BC, 1}$
+	- $\sigma_2 = \sigma_{BC, 2}$
+	- $\sigma_{AC} = (\sigma_1, \sigma_2)$
+- $\Verify(\pk_{\Alice}, \pk_Z, \sigma_{AZ}, \sigma_{XA})$:
+    - $e(\sigma_{AZ, 1}, \hat{g}) =^? e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(\sigma_{AZ,2}, \pk_{\Bob, 1})$
 
-<h4 id="correctness-of-verification">Correctness of verification:</h4>
-<p>Denote Bob’s secret exponents as $b$ and $s$.
-If $\sigma_{AB}$ comes from $\Sign$, the verification check becomes</p>
+#### Correctness of verification:
+Denote Bob's secret exponents as $b$ and $s$.
+If $\sigma_{AB}$ comes from $\Sign$, the verification check becomes
 
-\[\begin{align}
-e(\sigma_{AB, 1}, \hat{g}) &amp;= e(a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2}, \hat{g}) \\
-&amp;= e(a \cdot \sigma_{XA,2} - r' s b \cdot g, \hat{g}) \\
-&amp;= e(\sigma_{XA,2}, a \cdot \hat{g}) - e(r' s \cdot g, b \cdot \hat{g}) \\
-&amp;= e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(r' \cdot \pk_{\Bob, 3}, \pk_{\Bob, 1}) \\
-&amp;= e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(\sigma_{AB,2}, \pk_{\Bob, 1})
-\end{align}\]
+$$\begin{align}
+e(\sigma_{AB, 1}, \hat{g}) &= e(a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2}, \hat{g}) \\
+&= e(a \cdot \sigma_{XA,2} - r' s b \cdot g, \hat{g}) \\
+&= e(\sigma_{XA,2}, a \cdot \hat{g}) - e(r' s \cdot g, b \cdot \hat{g}) \\
+&= e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(r' \cdot \pk_{\Bob, 3}, \pk_{\Bob, 1}) \\
+&= e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(\sigma_{AB,2}, \pk_{\Bob, 1})
+\end{align}$$
 
-<h4 id="correctness-of-combination">Correctness of combination:</h4>
-<p>If $\sigma_{AB}$ comes from $\Sign(\sk_\Alice, \pk_\Bob, \sigma_{XA})$ and $\sigma_{BC}$ comes from $\Sign(\sk_\Bob, \pk_\Charlie, \sigma_{AB})$,
-then $\Combine$ outputs $\sigma_{AC} = (\sigma_1, \sigma_2)$ where</p>
+#### Correctness of combination:
+If $\sigma_{AB}$ comes from $\Sign(\sk_\Alice, \pk_\Bob, \sigma_{XA})$ and $\sigma_{BC}$ comes from $\Sign(\sk_\Bob, \pk_\Charlie, \sigma_{AB})$,
+then $\Combine$ outputs $\sigma_{AC} = (\sigma_1, \sigma_2)$ where
 
-\[\begin{align}
-\sigma_1 &amp;= \sigma_{AB,1} + \sigma_{BC, 1} \\
-&amp;= a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2} + b \cdot \sigma_{AB,2} - s' \cdot \pk_{\Charlie, 2} \\
-&amp;= a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2} + b r' \cdot \pk_{\Bob,3} - s' \cdot \pk_{\Charlie, 2} \\
-&amp;= a \cdot \sigma_{XA,2} - r' s b \cdot g + b r' s \cdot g - s' \cdot \pk_{\Charlie, 2} \\
-&amp;= a \cdot \sigma_{XA,2} - s' \cdot \pk_{\Charlie, 2} \\
-\sigma_2 &amp;= \sigma_{BC, 2} \\
-&amp;= s' \cdot \pk_{\Charlie, 3}
-\end{align}\]
+$$\begin{align}
+\sigma_1 &= \sigma_{AB,1} + \sigma_{BC, 1} \\
+&= a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2} + b \cdot \sigma_{AB,2} - s' \cdot \pk_{\Charlie, 2} \\
+&= a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2} + b r' \cdot \pk_{\Bob,3} - s' \cdot \pk_{\Charlie, 2} \\
+&= a \cdot \sigma_{XA,2} - r' s b \cdot g + b r' s \cdot g - s' \cdot \pk_{\Charlie, 2} \\
+&= a \cdot \sigma_{XA,2} - s' \cdot \pk_{\Charlie, 2} \\
+\sigma_2 &= \sigma_{BC, 2} \\
+&= s' \cdot \pk_{\Charlie, 3}
+\end{align}$$
 
-<p>which is a valid Alice-signature over Charlie’s public key.</p>
+which is a valid Alice-signature over Charlie’s public key.
 
-<h4 id="security">Security:</h4>
-<p>TBD but the intention is that the secrecy of $a \cdot \sigma_{XA,2}$ makes it impossible to forge $\sigma_{AB}$ without knowing Bob’s exponent.
+#### Security:
+TBD but the intention is that the secrecy of $a \cdot \sigma_{XA,2}$ makes it impossible to forge $\sigma_{AB}$ without knowing Bob’s exponent.
 Transitively, forging $\sigma_{AZ}$ should be impossible without knowing the secret exponent of someone who is reachable from Alice in the certification graph.
-(Or is this obviously insecure because there is some trivial attack…?! Fwiw, I couldn’t spot any.)</p>
+(Or is this obviously insecure because there is some trivial attack...?! Fwiw, I couldn't spot any.)
 
-<h2 id="next-steps">Next steps?</h2>
-<p>To work on this systematically, the first step would be to properly formalize the desired properties of the scheme (with support for groups of signers instead of single signers).
-From this we would see if the candidate direct construction – or some version of it – is any good.
+
+## Next steps?
+To work on this systematically, the first step would be to properly formalize the desired properties of the scheme (with support for groups of signers instead of single signers).
+From this we would see if the candidate direct construction -- or some version of it -- is any good.
 Besides, there should also be generic constructions, say, from SNARKs/IVC, which should be specified and compared against the direct construction.
-Finally, we might build a light client protocol in a similar spirit as <a href="https://hackmd.io/@VicChaos/HyQJedYhkx">the one with transitive signatures</a>.</p>]]></content><author><name></name></author><summary type="html"><![CDATA[This post outlines a preliminary follow-up research idea for our light client protocol. Let’s see if the signature-based design can be taken further! :thinking:]]></summary></entry><entry><title type="html">Light Clients from Transitive Signatures</title><link href="https://mal.com.de/light-client/" rel="alternate" type="text/html" title="Light Clients from Transitive Signatures" /><published>2025-07-29T00:00:00+02:00</published><updated>2025-07-29T00:00:00+02:00</updated><id>https://mal.com.de/light-client</id><content type="html" xml:base="https://mal.com.de/light-client/"><![CDATA[<p>This post is about <a href="https://arxiv.org/abs/2410.03347">our 2024 paper</a>’s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood.
-I’ll specify some aspects that were left out of the paper’s abstract description.
-Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum.</p>
+Finally, we might build a light client protocol in a similar spirit as [the one with transitive signatures](https://hackmd.io/@VicChaos/HyQJedYhkx).]]></content><author><name></name></author><summary type="html"><![CDATA[This post outlines a preliminary follow-up research idea for our light client protocol. Let’s see if the signature-based design can be taken further! :thinking:]]></summary></entry><entry><title type="html">Light Clients from Transitive Signatures</title><link href="https://mal.com.de/light-client/" rel="alternate" type="text/html" title="Light Clients from Transitive Signatures" /><published>2025-07-29T00:00:00+02:00</published><updated>2025-07-29T00:00:00+02:00</updated><id>https://mal.com.de/light-client</id><content type="html" xml:base="https://mal.com.de/light-client/"><![CDATA[This post is about [our 2024 paper](https://arxiv.org/abs/2410.03347)'s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood.
+I'll specify some aspects that were left out of the paper's abstract description.
+Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum.
 
-<blockquote class="success">
-  <p><a href="/transitive-signatures/">Another post</a> goes deeper on transitive signatures, the underlying cryptographic primitive.</p>
-</blockquote>
+{: .success}
+> [Another post]({% link _posts/2025-07-29-transitive-signatures.md %}) goes deeper on transitive signatures, the underlying cryptographic primitive.
 
-<h2 id="main-idea">Main idea</h2>
-<p>We are in the setting of BFT committee-based blockchains where the validator committee may change after every epoch.
-We’ll say that $V^{(E)}$ is the set of validators for epoch $E$.
-We are investigating how the BFT protocol can be tweaked in order to support light clients which can efficiently (re-)sync with the blockchain after an offline phase.</p>
+## Main idea
+We are in the setting of BFT committee-based blockchains where the validator committee may change after every epoch.
+We'll say that $V^{(E)}$ is the set of validators for epoch $E$.
+We are investigating how the BFT protocol can be tweaked in order to support light clients which can efficiently (re-)sync with the blockchain after an offline phase.
 
-<p>The standard (old) syncing flow, repeated for all consecutive epochs, works as follows.</p>
-<ul>
-  <li>At some point during epoch $E$, the validators of epoch $E+1$ are decided.</li>
-  <li>At the end of epoch $E$, the last block in the epoch contains the list $V^{(E+1)}$.</li>
-  <li>The commit certificate of this block, therefore, also acts as a signature over $V^{(E+1)}$.</li>
-  <li>A client that is sync’ed up to epoch $E$ and stores $V^{(E)}$ uses the commit certificate to verify $V^{(E+1)}$ and, subsequently, uses $V^{(E+1)}$ to verify all blocks in epoch $E+1$.</li>
-</ul>
+The standard (old) syncing flow, repeated for all consecutive epochs, works as follows.
+- At some point during epoch $E$, the validators of epoch $E+1$ are decided.
+- At the end of epoch $E$, the last block in the epoch contains the list $V^{(E+1)}$.
+- The commit certificate of this block, therefore, also acts as a signature over $V^{(E+1)}$. 
+- A client that is sync'ed up to epoch $E$ and stores $V^{(E)}$ uses the commit certificate to verify $V^{(E+1)}$ and, subsequently, uses $V^{(E+1)}$ to verify all blocks in epoch $E+1$.
 
-<p>Note that validators who leave the committee are assumed to securely erase their secret keys.
-If they didn’t, attacks would be possible.
+Note that validators who leave the committee are assumed to securely erase their secret keys.
+If they didn't, attacks would be possible.
 But even with this assumption, if the client is out of sync by $m$ epochs, the standard sync flow still requires $O(m)$ work.
-Our protocol, by contrast, aims for $O(1)$.</p>
+Our protocol, by contrast, aims for $O(1)$.
 
-<h3 id="new-protocol-for-oligopolies">New protocol for “oligopolies”</h3>
-<p>Many practical systems allow for an important simplifying assumption: validators often remain in place across epochs.
+### New protocol for "oligopolies"
+Many practical systems allow for an important simplifying assumption: validators often remain in place across epochs.
 This does not apply to, say, Ethereum where the signing committee changes each slot.
 But it does apply many others.
-So, if this is the case, isn’t there a chance to drastically simplify light client protocols?</p>
+So, if this is the case, isn't there a chance to drastically simplify light client protocols?
 
-<p>Our new protocol is designed to let the just-returning light client re-use the keys of the last known validators as much as possible.
-To this end, each epoch change will come with a new extra signature from which the verifier learns the following: <em>may the same keys that were OK for verifying epoch $E$ be re-used for $E+1$, too?</em>
-Two design choices make this efficient:</p>
-<ol>
-  <li>Relying on pairing-based signatures allows representing the set of keys “that were OK for verifying epoch $E$” as a single aggregated public key (APK), $k^{(E)}$.</li>
-  <li><a href="/transitive-signatures/">Transitive signatures</a> allow compressing consecutive signatures into a single one that asserts: <em>may the same keys that were OK for verifying the last epoch $E$ be re-used for $E+m$, too?</em></li>
-</ol>
+Our new protocol is designed to let the just-returning light client re-use the keys of the last known validators as much as possible.
+To this end, each epoch change will come with a new extra signature from which the verifier learns the following: *may the same keys that were OK for verifying epoch $E$ be re-used for $E+1$, too?*
+Two design choices make this efficient:
+1. Relying on pairing-based signatures allows representing the set of keys "that were OK for verifying epoch $E$" as a single aggregated public key (APK), $k^{(E)}$.
+2. [Transitive signatures]({% link _posts/2025-07-29-transitive-signatures.md %}) allow compressing consecutive signatures into a single one that asserts: *may the same keys that were OK for verifying the last epoch $E$ be re-used for $E+m$, too?*
 
-<h3 id="details">Details</h3>
-<p>Our new protocol determines a special subset of validators according to a deterministic rule so that all validators know it.
-We think of it as the <em>longest-running quorum</em>.
+### Details
+Our new protocol determines a special subset of validators according to a deterministic rule so that all validators know it.
+We think of it as the *longest-running quorum*.
 The protocol requires that the honest validators output a second signature at the end of each epoch.
 This signature is computed in one of two ways, depending on whether the same longest-running quorum still makes up a quorum for the next round.
 If so, the signed value is just the epoch counter.
-Otherwise, eg, if one of the validators from the quorum leaves, it is the APK $k^{(E)}$ of the new longest-running quorum.</p>
+Otherwise, eg, if one of the validators from the quorum leaves, it is the APK $k^{(E)}$ of the new longest-running quorum.
 
-<p>For simplicity, we say that “$k^{(E)}$ gets signed”, understanding that some of these signatures are computed based on the epoch counter alone.</p>
+For simplicity, we say that "$k^{(E)}$ gets signed", understanding that some of these signatures are computed based on the epoch counter alone.
 
-<p>We always think of $k^{(E)}$ as an APK that should be used (by syncing clients in the future) to <strong>verify</strong> the $E$th epoch.
+We always think of $k^{(E)}$ as an APK that should be used (by syncing clients in the future) to **verify** the $E$th epoch.
 This means that $k^{(E)}$ is the APK of a subset of $V^{(E-1)}$, the validators of epoch $E-1$.
-It gets decided and, potentially, signed at the <strong>end</strong> of epoch $E$.
-This is because it can only be signed once it is known whether the same validators A) actually signed off on the $E$th epoch and B) will stay on for the next epoch, in particular, whether $k^{(E+1)}=k^{(E)}$.</p>
+It gets decided and, potentially, signed at the **end** of epoch $E$.
+This is because it can only be signed once it is known whether the same validators A) actually signed off on the $E$th epoch and B) will stay on for the next epoch, in particular, whether $k^{(E+1)}=k^{(E)}$.
 
-<blockquote class="info">
-  <p>This is a “liveness” concern that the paper’s model had ignored for simplicity.</p>
-</blockquote>
+{: .info}
+> This is a "liveness" concern that the paper's model had ignored for simplicity.
 
-<h3 id="example-flow">Example flow</h3>
-<p>Consider the good case in which the longest-running quorum remained static over a run fo $m$ epochs.
-In particular, suppose a light client is sync’ed up to epoch $E$, meaning that it stores the list $V^{(E)}$, but the current epoch is already $E+m$.
+### Example flow
+Consider the good case in which the longest-running quorum remained static over a run fo $m$ epochs.
+In particular, suppose a light client is sync'ed up to epoch $E$, meaning that it stores the list $V^{(E)}$, but the current epoch is already $E+m$.
 When the light client sends a sync request to a full node, the full node will send a bit vector specifying the APK $k^{(E+1)}$ and an aggregate of the transitive signatures over $k^{(E+1)}, \dots, k^{(E+m-1)}$ to the client.
 The aggregated signature will allow the light client to confirm that, indeed, the same quorum that was a quorum in epoch $E$ (and thus authorized to sign the hand-off to epoch $E+1$) is also authorized to sign the hand-off to epoch $E+m-1$.
-Effectively, the client may now safely “jump ahead” and verify $V^{(E+m-1)}$ against $V^{(E)}$.
-Given $V^{(E+m-1)}$, the light client can use the standard flow for the last mile, that is, to verify $V^{(E+m)}$ and then any block from the current epoch $E+m$.</p>
+Effectively, the client may now safely "jump ahead" and verify $V^{(E+m-1)}$ against $V^{(E)}$.
+Given $V^{(E+m-1)}$, the light client can use the standard flow for the last mile, that is, to verify $V^{(E+m)}$ and then any block from the current epoch $E+m$.
 
-<p>The table shows what gets decided and signed when:</p>
+The table shows what gets decided and signed when:
 
-<table>
-  <thead>
-    <tr>
-      <th>Epoch</th>
-      <th>Current validators</th>
-      <th>Next validators</th>
-      <th>Gets signed at end of epoch</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>$E-1$</td>
-      <td>$V^{(E-1)}$</td>
-      <td>$V^{(E)}$</td>
-      <td>$V^{(E)}, k^{(E-1)}$</td>
-    </tr>
-    <tr>
-      <td>$E$</td>
-      <td>$V^{(E)}$</td>
-      <td>$V^{(E+1)}$</td>
-      <td>$V^{(E+1)}, k^{(E)}$</td>
-    </tr>
-    <tr>
-      <td>$E+1$</td>
-      <td>$V^{(E+1)}$</td>
-      <td>$V^{(E+2)}$</td>
-      <td>$V^{(E+2)}, k^{(E+1)}$</td>
-    </tr>
-    <tr>
-      <td>$\dots$</td>
-      <td> </td>
-      <td> </td>
-      <td> </td>
-    </tr>
-    <tr>
-      <td>$E+m-1$</td>
-      <td>$V^{(E+m-1)}$</td>
-      <td>$V^{(E+m)}$</td>
-      <td>$V^{(E+m)}, k^{(E+m-1)}$</td>
-    </tr>
-    <tr>
-      <td>$E+m$ (current)</td>
-      <td>$V^{(E+m)}$</td>
-      <td>(not yet known)</td>
-      <td>(not yet known)</td>
-    </tr>
-  </tbody>
-</table>
+| Epoch | Current validators | Next validators | Gets signed at end of epoch |
+| - | - | - | - |
+| $E-1$ | $V^{(E-1)}$ | $V^{(E)}$ | $V^{(E)}, k^{(E-1)}$ |
+| $E$ | $V^{(E)}$ | $V^{(E+1)}$ | $V^{(E+1)}, k^{(E)}$ |
+| $E+1$ | $V^{(E+1)}$ | $V^{(E+2)}$ | $V^{(E+2)}, k^{(E+1)}$ |
+| $\dots$ | | | |
+| $E+m-1$ | $V^{(E+m-1)}$ | $V^{(E+m)}$ | $V^{(E+m)}, k^{(E+m-1)}$ |
+| $E+m$ (current) | $V^{(E+m)}$ | (not yet known) | (not yet known) |
 
-<h2 id="better-tolerating-asynchrony">Better tolerating asynchrony</h2>
-<p>For the protocol to be efficient, we want long runs where the same $k^{(E)}$ gets signed after each epoch.
+
+## Better tolerating asynchrony
+For the protocol to be efficient, we want long runs where the same $k^{(E)}$ gets signed after each epoch.
 But, unfortunately, even if the same quorum validators remain active, network asynchrony can still degrade the protocol.
-This is because a validator will only sign on the same $k^{(E)}$ when it has <em>locally seen</em> the quorum validators’ signatures (over the prior round).
+This is because a validator will only sign on the same $k^{(E)}$ when it has *locally seen* the quorum validators' signatures (over the prior round).
 In an asynchronous network, messages can always be delayed or out of order.
-Therefore, it is possible that the longest-running quorum gets prematurely replaced because those validators’ signatures arrive late even if they do eventually arrive.</p>
+Therefore, it is possible that the longest-running quorum gets prematurely replaced because those validators' signatures arrive late even if they do eventually arrive.
 
-<p>Wouldn’t it be nice if the future light client’s efficiency did not depend so much on day-to-day network fluctuations?
+Wouldn't it be nice if the future light client's efficiency did not depend so much on day-to-day network fluctuations?
 There is a straightforward way to address this concern.
-Namely, we stagger the protocol by $d$ rounds:</p>
-<ul>
-  <li>$k^{(E)}$ does not get defined as an APK of validators from $V^{(E-1)}$ who signed $V^{(E)}$ at the end of epoch $E-1$.</li>
-  <li>Instead, it will be the APK of validators from $V^{(E-d-1)}$ who signed $V^{(E-d)}$ at the end of epoch $E-d-1$.</li>
-  <li>Depending on the epoch length, it is overwhelmingly likely that all required signatures will have arrived at all validators by the end of epoch $E$.</li>
-  <li>This way, the protocol only helps the light client skip ahead to $V^{(E+m-d-1)}$ and the “last mile” of standard syncing is a bit longer.</li>
-</ul>
+Namely, we stagger the protocol by $d$ rounds:
+- $k^{(E)}$ does not get defined as an APK of validators from $V^{(E-1)}$ who signed $V^{(E)}$ at the end of epoch $E-1$.
+- Instead, it will be the APK of validators from $V^{(E-d-1)}$ who signed $V^{(E-d)}$ at the end of epoch $E-d-1$.
+- Depending on the epoch length, it is overwhelmingly likely that all required signatures will have arrived at all validators by the end of epoch $E$.
+- This way, the protocol only helps the light client skip ahead to $V^{(E+m-d-1)}$ and the "last mile" of standard syncing is a bit longer.
 
-<h2 id="istanbul-bft-integration">Istanbul BFT integration</h2>
-<p>In the <a href="https://github.com/Consensys/quorum/">Quorum</a> blockchain’s <a href="https://arxiv.org/pdf/2002.03613">Istanbul BFT</a> consensus, each block goes through the following rounds:</p>
-<ul>
-  <li>Pre-prepare. The proposer/leader broadcasts the block to all validators.</li>
-  <li>Prepare. The validators respond by broadcasting prepare-votes/signatures over the proposal.</li>
-  <li>Commit. After seeing enough prepare votes, validators broadcast commit-votes over the proposal.</li>
-  <li>After seeing enough commit-votes, everyone locally decides the block.
-Formally, each validator forms a so-called commit certificate which is just the collection of commit-votes (of which there are, by definition, at least $2f+1$).</li>
-</ul>
 
-<p>A pre-prepare will only be answered if the “previous block” referenced in the proposed block already has a commit certificate.</p>
 
-<h3 id="adding-the-new-signatures">Adding the new signatures</h3>
-<p>We integrate our new signatures over $k$ into this structure.
-First, we want every commit certificate to also contain the validators’ signatures over $k$.
+## Istanbul BFT integration
+In the [Quorum](https://github.com/Consensys/quorum/) blockchain's [Istanbul BFT](https://arxiv.org/pdf/2002.03613) consensus, each block goes through the following rounds:
+- Pre-prepare. The proposer/leader broadcasts the block to all validators.
+- Prepare. The validators respond by broadcasting prepare-votes/signatures over the proposal.
+- Commit. After seeing enough prepare votes, validators broadcast commit-votes over the proposal.
+- After seeing enough commit-votes, everyone locally decides the block.
+  Formally, each validator forms a so-called commit certificate which is just the collection of commit-votes (of which there are, by definition, at least $2f+1$).
+
+A pre-prepare will only be answered if the "previous block" referenced in the proposed block already has a commit certificate.
+
+### Adding the new signatures
+We integrate our new signatures over $k$ into this structure.
+First, we want every commit certificate to also contain the validators' signatures over $k$.
 For validators to sign $k$ (and the same $k$!), a unique description of $k$ must be included in the pre-prepare/proposal.
-Then, the consensus logic will ensure that all commit certificates authenticate the same $k$.</p>
+Then, the consensus logic will ensure that all commit certificates authenticate the same $k$.
 
-<p>Concretely, we must add two rules:</p>
-<ol>
-  <li>A pre-prepare is only recognized as valid if it includes the description of an APK $k$ that is the APK of a quorum of validators who all sent commit-votes over the <em>previous</em> end-of-epoch block (or, for the staggered variant, $d$ epoch blocks before).</li>
-  <li>A commit-vote is only recognized as valid if it comes with a separate signature, made with our special scheme, over $k$ from the proposal.</li>
-</ol>
+Concretely, we must add two rules:
+1. A pre-prepare is only recognized as valid if it includes the description of an APK $k$ that is the APK of a quorum of validators who all sent commit-votes over the *previous* end-of-epoch block (or, for the staggered variant, $d$ epoch blocks before).
+2. A commit-vote is only recognized as valid if it comes with a separate signature, made with our special scheme, over $k$ from the proposal.
 
-<p>For the description of $k$ we can choose a bit vector of the validators whose keys go into $k$.
+For the description of $k$ we can choose a bit vector of the validators whose keys go into $k$.
 To check rule 2 using the bit vector, we just check if we indeed received the required commit-votes from the indicated validators (and that there are $2f+1$ of them).
-Note that if we put $k$ itself in the proposal and not a bit vector representation, then checking rule 2 would be inefficient: the validators would have to see if there is <em>any</em> subset of validators who issued commit-votes and whose keys added up to $k$.</p>
+Note that if we put $k$ itself in the proposal and not a bit vector representation, then checking rule 2 would be inefficient: the validators would have to see if there is *any* subset of validators who issued commit-votes and whose keys added up to $k$.
 
-<p>It is the proposer’s job to choose $k$.
+It is the proposer's job to choose $k$.
 For consensus not to slow down, the proposer may always track how long each validator is active and always choose the $2f+1$ longest-running validators.
-Ideally, modulo momentary asynchrony as mentioned above, this should result in long runs of the same $k$ which makes future light clients $O(1)$ as desired. :raised_hands:</p>
+Ideally, modulo momentary asynchrony as mentioned above, this should result in long runs of the same $k$ which makes future light clients $O(1)$ as desired. :raised_hands:
 
-<h2 id="final-notes">Final notes</h2>
-<h3 id="implementation">Implementation</h3>
-<p>An implementation of the signature scheme and a light client <em>simulation</em> with mock data is included in the <a href="https://github.com/malcom-mo/acsac24">code released along with our paper</a>.
-<!--An exmaple integration of our protocol into the Quorum blockchain is available [here](asdf).--></p>
 
-<h3 id="prover-cost">“Prover cost”</h3>
-<p>One of the reasons we focus on the Quorum blockchain is that it uses Istanbul BFT, the same consensus that was used by Celo1.
-We can draw a comparison between our protocol and <a href="https://eprint.iacr.org/2021/1361.pdf">Celo1’s light client</a>.
+## Final notes
+### Implementation
+An implementation of the signature scheme and a light client *simulation* with mock data is included in the [code released along with our paper](https://github.com/malcom-mo/acsac24).
+<!--An exmaple integration of our protocol into the Quorum blockchain is available [here](asdf).-->
+
+
+### "Prover cost"
+One of the reasons we focus on the Quorum blockchain is that it uses Istanbul BFT, the same consensus that was used by Celo1.
+We can draw a comparison between our protocol and [Celo1's light client](https://eprint.iacr.org/2021/1361.pdf).
 This is interesting because back then, Celo1 ran one of the historically largest zero-knowledge proofs for their light clients.
 The circuit was of size $2^{28}$ and the proving cost was, accordingly, quite high.
-Compare this with our signature-based solution:</p>
+Compare this with our signature-based solution:
 
-<blockquote class="success">
-  <p>In our protocol, prover cost is merely signature aggregation.</p>
-</blockquote>]]></content><author><name></name></author><summary type="html"><![CDATA[This post is about our 2024 paper’s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood. I’ll specify some aspects that were left out of the paper’s abstract description. Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum.]]></summary></entry><entry><title type="html">Notes on Transitive BLS Signatures</title><link href="https://mal.com.de/transitive-signatures/" rel="alternate" type="text/html" title="Notes on Transitive BLS Signatures" /><published>2025-07-29T00:00:00+02:00</published><updated>2025-07-29T00:00:00+02:00</updated><id>https://mal.com.de/transitive-signatures</id><content type="html" xml:base="https://mal.com.de/transitive-signatures/"><![CDATA[<p>This is the first post about <a href="https://arxiv.org/abs/2410.03347">our 2024 ACSAC paper</a> on light client syncing after offline phases.
+{: .success}
+> In our protocol, prover cost is merely signature aggregation.]]></content><author><name></name></author><summary type="html"><![CDATA[This post is about our 2024 paper’s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood. I’ll specify some aspects that were left out of the paper’s abstract description. Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum.]]></summary></entry><entry><title type="html">Notes on Transitive BLS Signatures</title><link href="https://mal.com.de/transitive-signatures/" rel="alternate" type="text/html" title="Notes on Transitive BLS Signatures" /><published>2025-07-29T00:00:00+02:00</published><updated>2025-07-29T00:00:00+02:00</updated><id>https://mal.com.de/transitive-signatures</id><content type="html" xml:base="https://mal.com.de/transitive-signatures/"><![CDATA[<p>This is the first post about <a href="https://arxiv.org/abs/2410.03347">our 2024 ACSAC paper</a> on light client syncing after offline phases.
 In a nutshell, we experiment with light clients based on so-called transitive signatures.
 This post discusses the underlying cryptographic primitive.
 Specifically, I’ll</p>
@@ -382,7 +316,7 @@ This also means that further applications of $\Aggregate$ with signatures over m
 <p>The BLS-like transitive signature construction originates in <a href="https://eprint.iacr.org/2004/215.pdf">the GapTS-2 scheme from this paper</a>.
 Let $\G, \hat{\G}, \G_T$ be groups of prime order $p$ with a bilinear map $e : \G \times \hat{\G} \rightarrow \G_T$ and generators $g \in \G, \hat{g} \in \hat{\G}$.
 Denote the group operation as $+$ and its repeated application as $\cdot$.
-Let $H : {0,1}^* \rightarrow \hat{\G}$ and $H’ : \G \rightarrow \hat{\G}$ be hash functions.
+Let $H : \{0,1\}^* \rightarrow \hat{\G}$ and $H’ : \G \rightarrow \hat{\G}$ be hash functions.
 Here is an extension of GapTS-2 with aggregation and proofs of possession:</p>
 <ul>
   <li>$\KeyGen()$: picks random exponent $\sk \in \mathbb{Z}_p^*$ and sets $\pk = \sk \cdot g$, $\pop = \sk \cdot H’(\pk$).</li>
@@ -477,7 +411,7 @@ We proceed by induction over $d$:</p>
   The single edge corresponds to the signature $\sig_{12} = a \cdot (\groupHash(y_2)-\groupHash(y_1))$.
   $\advB$ can make one $\cdh$ query with input $a \cdot g, a \cdot \hat{g}, \groupHash(y_1)$ to obtain $s = a \cdot b_1 \cdot \hat{g}$.
   This allows computing the other Diffie-Hellman secret as $s + \sig_{12} = a \cdot b_2 \cdot \hat{g}$.
-  (If $x \in {y_1,y_2}$, no further query is needed as $a \cdot \groupHash(x)$ is already known.)</li>
+  (If $x \in \{y_1,y_2\}$, no further query is needed as $a \cdot \groupHash(x)$ is already known.)</li>
   <li>Induction step, $d-1 \rightarrow d$.
   Let $y_1, y_2$ be connected nodes in a minimum spanning tree of $C$ such that $\groupHash(y_1) = b_1 \cdot \hat{g}$, $\groupHash(y_2) = b_2 \cdot \hat{g}$ and such that $y_2$ is a leaf, that is, the only edge of $y_2$ in the minimum spanning tree is the edge to $y_1$.
   Let the signature corresponding to the edge between $y_1$ and $y_2$ be $\sig_{12} = a \cdot (\groupHash(y_2)-\groupHash(y_1))$.
@@ -501,11 +435,11 @@ As per the KOE assumption, $\advB$ extracts the lists of secret keys $\SK_1, \do
 
 <p>Let $\sk^* = \log_g(\pk)$.
 If $\Sig$ passed verification, then $\Sig = \sum_{i \in [n]} \apk_i \cdot (H(z_i)-H(x_i))$ where \(\apk_i = \begin{cases}\sum_{\sk \in \SK_i} \sk &amp; \text{if } \pk \in \PK_i \\ c_i \sk^* + \sum_{\sk \in \SK_i} \sk &amp; \text{otherwise}\end{cases}\)
-where $c_i = |{j \in [|\PK_i|] : \pk_{i,j} = \pk}|$.
+where $c_i = |\{j \in [|\PK_i|] : \pk_{i,j} = \pk\}|$.
 Hence, $B$ first subtracts $\sum_{i \in [n]} \left(\sum_{\sk \in \SK_i} \sk\right) (H(z_i)-H(x_i))$ from $\Sig$ to obtain $\Sig’ = \sk^* \cdot \left(\sum_{i \in I} c_i (H(z_i)-H(x_i))\right)$ where $I \subset [n]$ is the set of all $i$ such that $\pk \in \PK_i.$
 $\advB$ then picks $k \in I$ such that the graph induced by the signing queries contains no path from $x_k$ to $z_k$.
-$\advB$ queries signatures $\sig_i’ = \sk^* \cdot (H(z_i)-H(x_i))$ for each $i \in I \setminus {k}$.
-Finally, $\advB$ computes $\Sig’ - \sum_{i \in I \setminus {k}} \sig_i’ = \sk^* \cdot (H(z_k)-H(x_k))$.
+$\advB$ queries signatures $\sig_i’ = \sk^* \cdot (H(z_i)-H(x_i))$ for each $i \in I \setminus \{k\}$.
+Finally, $\advB$ computes $\Sig’ - \sum_{i \in I \setminus \{k\}} \sig_i’ = \sk^* \cdot (H(z_k)-H(x_k))$.
 This constitutes a valid forgery for GapTS-2, completing the proof.</p>]]></content><author><name></name></author><summary type="html"><![CDATA[This is the first post about our 2024 ACSAC paper on light client syncing after offline phases. In a nutshell, we experiment with light clients based on so-called transitive signatures. This post discusses the underlying cryptographic primitive. Specifically, I’ll define transitive (multi-)signatures, present a BLS-based construction and argue that it’s secure under a cryptographic assumption (in a bit more detail than our paper’s appendix had space for).]]></summary></entry><entry><title type="html">Notes on AMTs and Hyperproofs</title><link href="https://mal.com.de/amts-and-hyperproofs/" rel="alternate" type="text/html" title="Notes on AMTs and Hyperproofs" /><published>2025-07-03T00:00:00+02:00</published><updated>2025-07-03T00:00:00+02:00</updated><id>https://mal.com.de/amts-and-hyperproofs</id><content type="html" xml:base="https://mal.com.de/amts-and-hyperproofs/"><![CDATA[<p><a href="https://dspace.mit.edu/bitstream/handle/1721.1/129845/scalable_thresh.pdf">AMTs</a> and <a href="https://eprint.iacr.org/2021/599.pdf">Hyperproofs</a> are vector commitment schemes built from <a href="https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf">KZG</a> and, respectively, <a href="https://eprint.iacr.org/2011/587.pdf">PST</a> polynomial commitments.
 Both share the properties that proofs for a size-$2^m$ vector are of size $m$ and that the opening proofs for all elements can be organized in a binary tree so that an update to a single vector entry requires updating the proof tree in only $m$ places.
 Unlike <a href="https://eprint.iacr.org/2020/527.pdf">another KZG-based vector commitment</a> (where proofs have size 1, are natively batchable but not efficiently updatable), neither AMTs nor Hyperproofs have native multi-point openings.
@@ -544,7 +478,7 @@ x_i \mapsto x^{(\deg_1(f) + \deg_1(g) +1) \cdots (\deg_{i-1}(f) + \deg_{i-1}(g) 
 \end{equation}</p>
 
 <p>For the AMT-Hyperproof equivalence to work, I am assuming that we use Hyperproofs with roots of untiy as well.
-Specifically, instead of interpolating over ${0,1}^m$, I am thinking of a variant of Hyperproofs where our multilinear polynomial $f$ is interpolated over the set $D = {(w^i, w^{2i}, \dots, w^{2^{m-1} i}) \mid i \in [0, 2^m-1]}.$
+Specifically, instead of interpolating over $\{0,1\}^m$, I am thinking of a variant of Hyperproofs where our multilinear polynomial $f$ is interpolated over the set $D = \{(w^i, w^{2i}, \dots, w^{2^{m-1} i}) \mid i \in [0, 2^m-1]\}.$
 Here, $w$ is the primitive $2^m$th root of unity.
 For points of this form, the PST/Hyperproofs opening identity is
 \(\begin{align}\tag{3}
@@ -553,7 +487,7 @@ f - f(w^i, \dots, w^{2^{m-1} i}) = \sum_{j \in [m]} q_j \cdot (x_j - w^{2^{j-1} 
 By inspecting the degrees, $q_j$ cannot depend on $x_j$.
 In fact, if the $q_j$ are computed iteratively, starting with $q_m$, then $q_j$ is linear in $x_1, \dots, x_{j-1}$ and does not depend on $x_j, \dots, x_m$.</p>
 
-<p>Now, let’s look at AMT proofs when interpolating the same vector as in Hyperproofs with a univariate polynomial $u$ over the roots of unity ${w^i \mid i \in [0,2^m-1]}$.
+<p>Now, let’s look at AMT proofs when interpolating the same vector as in Hyperproofs with a univariate polynomial $u$ over the roots of unity $\{w^i \mid i \in [0,2^m-1]\}$.
 The crucial observation is that the multilinear $f$ from Hyperproofs and the univariate $u$ have the same coefficient vector, $u = \uni(f)$.
 Indeed, if $u = \sum_{k \in [0,2^m-1]} c_k x^k$, then the bit decomposition of $k$ gives</p>
 
@@ -605,9 +539,9 @@ q &amp;= \frac{u-u(w^i)}{x-w^i} \\
 <h2 id="aggregating-hyperproofs-thinking">Aggregating Hyperproofs :thinking:</h2>
 <p>As Hyperproofs uses PST and multi-point openings for PST are given by Boomy, one might wonder whether multiple Hyperproofs can be compressed down to Boomy proofs.
 <a href="/boomy/">For an introduction to Boomy, also see my previous post</a>.
-In one sentence, a Boomy proof for $k$ points $V = {v_1, \dots, v_k} \subset {0,1}^m$ consists of commitments to quotients that prove the divisibility of our committed polynomial by the reduced Gröbner basis of the ideal of $V$.
-However, Gröbner bases for size-$k$ subsets of ${0,1}^m$ can get somewhat complicated.
-For example, the following Sage code outputs a Gröbner basis of 10 elements for 5 points in ${0,1}^4$:</p>
+In one sentence, a Boomy proof for $k$ points $V = \{v_1, \dots, v_k\} \subset \{0,1\}^m$ consists of commitments to quotients that prove the divisibility of our committed polynomial by the reduced Gröbner basis of the ideal of $V$.
+However, Gröbner bases for size-$k$ subsets of $\{0,1\}^m$ can get somewhat complicated.
+For example, the following Sage code outputs a Gröbner basis of 10 elements for 5 points in $\{0,1\}^4$:</p>
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
 
 <span class="n">F</span> <span class="o">=</span> <span class="n">GF</span><span class="p">(</span><span class="mi">31</span><span class="p">)</span>
@@ -624,8 +558,8 @@ For example, the following Sage code outputs a Gröbner basis of 10 elements for
 <p><em>Note: The code had to describe $I(V)$, which is normally thought of as the intersection of the point ideals.
 But because the point ideals are maximal, their intersection is the same as their product.</em></p>
 
-<p>To avoid such big Gröbner bases, it turns out we can just change our interpolation set from ${0,1}^m$ to another.
-For example, let’s go back to the Hyperproofs variant that produces AMT proofs under Kronecker substitution and interpolate over \(D = \left\{\left(w^i, w^{2i}, \dots, w^{2^{m-1} i}\right)\right\}.\)
+<p>To avoid such big Gröbner bases, it turns out we can just change our interpolation set from $\{0,1\}^m$ to another.
+For example, let’s go back to the Hyperproofs variant that produces AMT proofs under Kronecker substitution and interpolate over \(D = \left\\{\left(w^i, w^{2i}, \dots, w^{2^{m-1} i}\right)\right\\}.\)
 What is so special about $D$?
 It turns out that the fact that all points in $D$ differ in the first coordinate forces a simple structure for the reduced Gröbner basis of the ideal of any subset $V \subseteq D$.
 Namely, let $g_1(x_1)$ vanish on the first coordinates, $g_1 = \prod_{v \in V} (x_1-v_1)$, and let $g_i(x_1)$ interpolate the $i$th coordinates over the first coordinates, $g_i(v_1) = v_i$ for all $v \in V, i \in [2,m]$.
@@ -642,34 +576,34 @@ We can now make a similar argument as we did for AMT-to-KZG compression.
 Namely, that the Hyperproofs tree does not help to produce Boomy proofs efficiently because of too high degrees.</p>
 
 <p>Let’s start by computing the expressions of the desired multi-point quotients $Q_1, \dots, Q_m$.
-We start from $f = \sum_{i_1, \dots, i_m \in {0,1}} c_{i_1\cdots i_m} x_1^{i_1} \cdots x_m^{i_m}$ and use the fact that the quotients can be obtained by iterated Euclidean division.
+We start from $f = \sum_{i_1, \dots, i_m \in \{0,1\}} c_{i_1\cdots i_m} x_1^{i_1} \cdots x_m^{i_m}$ and use the fact that the quotients can be obtained by iterated Euclidean division.
 Starting with $Q_m$, we write $f = r_m + Q_m \cdot (x_m-g_m)$.
 Since $r_m$ here is the remainder of $f$ when dividing by $x_m-g_m$, we have $r_m = f(x_1, \dots, x_{m-1}, g_m)$.
 Then,</p>
 
 \[\begin{align}
-f-r_m &amp;= \sum_{i_1, \dots, i_m \in \{0,1\}} c_{i_1 \cdots i_m} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m^{i_m} - g_m^{i_m}) \\
-&amp;= \sum_{i_1, \dots, i_{m-1} \in \{0,1\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m - g_m)
+f-r_m &amp;= \sum_{i_1, \dots, i_m \in \\{0,1\\}} c_{i_1 \cdots i_m} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m^{i_m} - g_m^{i_m}) \\
+&amp;= \sum_{i_1, \dots, i_{m-1} \in \\{0,1\\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}} (x_m - g_m)
 \end{align}\]
 
 <p>and</p>
 
-\[Q_m = \frac{f-r_m}{x_m-g_m} = \sum_{i_1, \dots, i_{m-1} \in \{0,1\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}}.\]
+\[Q_m = \frac{f-r_m}{x_m-g_m} = \sum_{i_1, \dots, i_{m-1} \in \\{0,1\\}} c_{i_1 \cdots i_{m-1} 1} x_1^{i_1} \cdots x_{m-1}^{i_{m-1}}.\]
 
 <p>We continue and divide $r_m$ by $x_{m-1}-g_{m-1}$, getting remainder $r_{m-1} = f(x_1, \dots, x_{m-2}, g_{m-1}, g_m)$ for which it holds that</p>
 
 \[\begin{align}
-r_m-r_{m-1} &amp;= \sum_{i_1, \dots, i_{m} \in \{0,1\}} c_{i_1 \cdots i_{m}} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}^{i_{m-1}}-g_{m-1}^{i_{m-1}}) g_m^{i_m} \\
-&amp;= \sum_{i_1, \dots, i_{m-2}, i_m \in \{0,1\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}-g_{m-1}) g_m^{i_m}.
+r_m-r_{m-1} &amp;= \sum_{i_1, \dots, i_{m} \in \\{0,1\\}} c_{i_1 \cdots i_{m}} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}^{i_{m-1}}-g_{m-1}^{i_{m-1}}) g_m^{i_m} \\
+&amp;= \sum_{i_1, \dots, i_{m-2}, i_m \in \\{0,1\\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} (x_{m-1}-g_{m-1}) g_m^{i_m}.
 \end{align}\]
 
 <p>Similarly to the case above, this shows that</p>
 
-\[Q_{m-1} = \sum_{i_1, \dots, i_{m-2}, i_m \in \{0,1\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} g_m^{i_m}.\]
+\[Q_{m-1} = \sum_{i_1, \dots, i_{m-2}, i_m \in \\{0,1\\}} c_{i_1 \cdots i_{m-2} 1 i_m} x_1^{i_1} \cdots x_{m-2}^{i_{m-2}} g_m^{i_m}.\]
 
 <p>Continuing these calculations, for $j \in [2,m]$ we get</p>
 
-\[Q_j = \sum_{i_1, \dots, i_{j-1}, i_{j+1}, \dots, i_m \in \{0,1\}} c_{i_1 \cdots i_{j-1} 1 i_{j+1} \cdots i_m} x_1^{i_1} \cdots x_{j-1}^{i_{j-1}} g_{j+1}^{i_{j+1}} \cdots g_m^{i_m}.\]
+\[Q_j = \sum_{i_1, \dots, i_{j-1}, i_{j+1}, \dots, i_m \in \\{0,1\\}} c_{i_1 \cdots i_{j-1} 1 i_{j+1} \cdots i_m} x_1^{i_1} \cdots x_{j-1}^{i_{j-1}} g_{j+1}^{i_{j+1}} \cdots g_m^{i_m}.\]
 
 <p>Finally, the univariate $r_2 = f(x_1, g_2, \dots, g_m)$ gets divided by $g_1$.
 The resulting remainder is the unique univariate polynomial of degree less than $\deg(g_1)$ that agrees with $r_2$ at the points where $g_1$ vanishes, that is, on the first coordinates $v_1$ of all $v \in V$.
@@ -752,7 +686,7 @@ Equivalence modulo $J$ is the same as equivalence modulo $g$.</li>
 <h2 id="pst-and-boomy">PST and Boomy</h2>
 <p>Ok, now, let’s apply the theory described so far to explain multivariate quotienting.
 First, how to generalize KZG openings to multivariates?
-Based on the above, a quotient proof for $f(v_1, \dots, v_m)=0$ has to express $f$ as a combination of the elements of the reduced Gröbner basis for the ideal of the single-point variety $V = {(v_1, \dots, v_m)}$.
+Based on the above, a quotient proof for $f(v_1, \dots, v_m)=0$ has to express $f$ as a combination of the elements of the reduced Gröbner basis for the ideal of the single-point variety $V = \{(v_1, \dots, v_m)\}$.
 To find the Gröbner basis, consider the polynomials $g_1 = x_1 - v_1, \dots, g_m = x_m - v_m$ and put $J = \langle g_1, \dots, g_m \rangle$.
 Clearly, $J \subseteq I(V)$ because everything in $J$ vanishes on $V$.
 But $J$ is actually maximal, which implies $J = I(V)$.
@@ -768,13 +702,13 @@ But still, it is worth looking for sets of points where the Gröbner basis is pa
 <p>The Boomy paper mentions two classes of sets of points $V$ whose ideals have “nice” Gröbner bases.
 One of them is the Cartesian product $V = V_1 \times \cdots \times V_m$ where $V_1, \dots, V_m \subset F$.
 The reduced Gröbner basis simply consists of $g_1, \dots, g_m$ where $g_i = \prod_{v \in V_i} (x-v)$, so each $g_i$ is the vanishing polynomial of $V_i$.
-This class is interesting because it includes hypercubes like ${0,1}^m$ and ${\pm 1}^m$.
+This class is interesting because it includes hypercubes like $\{0,1\}^m$ and $\{\pm 1\}^m$.
 To show that a polynomial vanishes over the whole hypercube, protocols like <a href="https://eprint.iacr.org/2019/550.pdf">Spartan</a> use the sumcheck protocol.
 We now know how to do the same thing with quotients: show divisibility by the reduced Gröbner basis of $I(V)$.</p>
 
 <p>Conceptually, this generalizes the univariate Aurora Hadamard/rowcheck technique, though it seems computationally more expensive.
-For example, consider $m$-linear polynomials $f,g,h$ for which we want to show that $fg \equiv h$ over ${0,1}^m.$
-Equivalently, $f(x)g(x) = h(x) + \sum_{i \in [m]} q_i(x) (x_i^2-x_i)$ for some $q_i$ because ${x_i^2-x_i}$ is the reduced Gröbner basis of $I({0,1}^m)$.
+For example, consider $m$-linear polynomials $f,g,h$ for which we want to show that $fg \equiv h$ over $\{0,1\}^m.$
+Equivalently, $f(x)g(x) = h(x) + \sum_{i \in [m]} q_i(x) (x_i^2-x_i)$ for some $q_i$ because $\{x_i^2-x_i\}$ is the reduced Gröbner basis of $I(\{0,1\}^m)$.
 Because the left-hand side has degree 2 in each $x_i$, $q_i$ cannot depend on $x_i$ at all.
 Moreoever, it is possible to compute the $q_i$ incrementally, say, starting with $q_m$, so that $q_i$ has degree 2 in $x_1, \dots, x_{i-1}$ and degree 1 in $x_{i+1}, \dots, x_m$.
 So $q_i$ is described by $3^{i-1} \cdot 2^{m-i}$ coefficients – or can maybe be interpolated from as many evaluations.
@@ -849,7 +783,7 @@ Finally, univariate polynomials are used in the Reed-Solomon code, which is a gr
 <p>A priori, I’d take this as ample grounds to guess that univariate polynomials should have some kind of analogue of the sumcheck protocol – because… well, why shouldn’t they? :shrug:</p>
 
 <h2 id="notations">Notations</h2>
-<p>Let $H$ be the multiplicative subgroup that consists of the $2^m$th roots of unity ${1, w, \dots, w^{2^m-1}}$.
+<p>Let $H$ be the multiplicative subgroup that consists of the $2^m$th roots of unity $\{1, w, \dots, w^{2^m-1}\}$.
 If $U$ is a univariate polynomial in $x$, the coefficient before $x^i$ is denoted as $U[i]$.
 If $M$ is an $m$-variate polynomial in $x_1, \dots, x_m$, the coefficient before $x_1^{i_1} \cdots x_m^{i_m}$ is denoted as $M[i]$, where $i$ is the integer with digit decomposition $i_1, \dots, i_m$ where $i_1$ is the least significant digit (in <a href="https://en.wikipedia.org/wiki/Mixed_radix">mixed-radix</a>, ie,
 $i = \sum_{j \in [m]} i_j \cdot \prod_{k \in [j-1]} (\deg_{x_k}(M)+1)$).
@@ -915,12 +849,12 @@ Denoting the witness vector (effectively the satisfying assignment for the const
   <tbody>
     <tr>
       <td>Gemini-1 + Gemini-2</td>
-      <td>$\mlex_{{\pm 1}^m}(v)$</td>
-      <td>$\uni(\mlex_{{\pm 1}^m}(v))$</td>
+      <td>$\mlex_{\{\pm 1\}^m}(v)$</td>
+      <td>$\uni(\mlex_{\{\pm 1\}^m}(v))$</td>
     </tr>
     <tr>
       <td>Spartan + HyperKZG</td>
-      <td>$\mlex_{{0,1}^m}(v)$</td>
+      <td>$\mlex_{\{0,1\}^m}(v)$</td>
       <td>$\uni(v)$</td>
     </tr>
     <tr>
@@ -1023,75 +957,72 @@ This can be seen from different angles, for example:</p>
 
 <p>This way, a multivariate oracle is like many univariate oracles in one.</p>
 
-<p>So, at least in my mind, this is why it makes sense that there is probably no way to get rid of the intermediary oracles in sumcheck-like reduction protocols. :smiley:</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Is there a sumcheck PIOP that only uses oracles to univariate polynomials (unlike the standard multivariate sumcheck protocol), has a linear-time prover (unlike Aurora’s quotient-based protocol), sends no intermediary oracles (unlike the protocol from this article)? :thinking:]]></summary></entry><entry><title type="html">Notes on Zeromorph</title><link href="https://mal.com.de/zeromorph/" rel="alternate" type="text/html" title="Notes on Zeromorph" /><published>2024-11-11T00:00:00+01:00</published><updated>2024-11-11T00:00:00+01:00</updated><id>https://mal.com.de/zeromorph</id><content type="html" xml:base="https://mal.com.de/zeromorph/"><![CDATA[<p>Here is a cute simple explanation of the underlying idea (roughly, I think) of how <a href="https://eprint.iacr.org/2023/917.pdf">Zeromorph</a> turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients.
+<p>So, at least in my mind, this is why it makes sense that there is probably no way to get rid of the intermediary oracles in sumcheck-like reduction protocols. :smiley:</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Is there a sumcheck PIOP that only uses oracles to univariate polynomials (unlike the standard multivariate sumcheck protocol), has a linear-time prover (unlike Aurora’s quotient-based protocol), sends no intermediary oracles (unlike the protocol from this article)? :thinking:]]></summary></entry><entry><title type="html">Notes on Zeromorph</title><link href="https://mal.com.de/zeromorph/" rel="alternate" type="text/html" title="Notes on Zeromorph" /><published>2024-11-11T00:00:00+01:00</published><updated>2024-11-11T00:00:00+01:00</updated><id>https://mal.com.de/zeromorph</id><content type="html" xml:base="https://mal.com.de/zeromorph/"><![CDATA[Here is a cute simple explanation of the underlying idea (roughly, I think) of how [Zeromorph](https://eprint.iacr.org/2023/917.pdf) turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients.
 The paper focuses on the $m$-linear case, so we are even slightly generalizing here.
-<!--No commutative diagrams or fancy terminology such as "Kronecker substitution" or "module isomorphism though not a ring isomorphism" will appear.--></p>
+<!--No commutative diagrams or fancy terminology such as "Kronecker substitution" or "module isomorphism though not a ring isomorphism" will appear.-->
 
-<h2 id="preliminaries">Preliminaries</h2>
-<ul>
-  <li><strong>Notation:</strong> If $p$ is a univariate polynomial in $x$ over a field $F$, its coefficient in front of $x^j$ is indexed as $p[j]$ and $\deg(p)$ denotes its degree.</li>
-  <li>Given univariate polynomials $p$, $m$ and $r$, $r$ is the remainder of $p$ modulo $m$ if and only if there exists a (quotient) polynomial $q$ such that \(p = r + q \cdot m\) and $\deg(r)&lt;\deg(m), \deg(q) \leq \deg(p) - \deg(m)$.</li>
-  <li>By the <em>factor theorem</em>, a univariate polynomial $p$ vanishes at $t \in F$ if and only if $p$ is divisible by $x-t$.</li>
-  <li>A generalization is the <em>remainder theorem</em> by which, for any $t$, $p$ can be uniquely decomposed as $p = p(t) + q \cdot (x-t)$.
-That is, the value (constant polynomial) $p(t)$ is the remainder of $p$ modulo $x-t$.</li>
-</ul>
+## Preliminaries
+- **Notation:** If $p$ is a univariate polynomial in $x$ over a field $F$, its coefficient in front of $x^j$ is indexed as $p[j]$ and $\deg(p)$ denotes its degree.
+- Given univariate polynomials $p$, $m$ and $r$, $r$ is the remainder of $p$ modulo $m$ if and only if there exists a (quotient) polynomial $q$ such that $$p = r + q \cdot m$$ and $\deg(r)<\deg(m), \deg(q) \leq \deg(p) - \deg(m)$.
+- By the *factor theorem*, a univariate polynomial $p$ vanishes at $t \in F$ if and only if $p$ is divisible by $x-t$.
+- A generalization is the *remainder theorem* by which, for any $t$, $p$ can be uniquely decomposed as $p = p(t) + q \cdot (x-t)$.
+  That is, the value (constant polynomial) $p(t)$ is the remainder of $p$ modulo $x-t$.
 
-<h2 id="higher-degree-factors">Higher-degree factors</h2>
-<p>The following is a generalized remainder theorem which can be proven from the basic rules for substituting variables when performing modulo reduction algorithmically.</p>
 
-<p><strong>Proposition (<a href="https://www.tandfonline.com/doi/abs/10.1080/0020739X.2018.1522676">Theorem 2.12 from here</a>):</strong>
+## Higher-degree factors
+The following is a generalized remainder theorem which can be proven from the basic rules for substituting variables when performing modulo reduction algorithmically.
+
+**Proposition ([Theorem 2.12 from here](https://www.tandfonline.com/doi/abs/10.1080/0020739X.2018.1522676)):**
 For any $t \in F$, any univariate polynomial $p$ of degree $d$ can be uniquely decomposed as
-\(p = r + q \cdot (x^k-t)\)
-such that $\deg(q) \leq d-k$, $\deg(r) &lt; k$ and the coefficients of $r$ are
-\(r[i] = \sum_{j \in [0, \left\lfloor{\frac{d-i}{k}}\right\rfloor]} p[i+jk] \cdot t^j.\)</p>
+$$p = r + q \cdot (x^k-t)$$
+such that $\deg(q) \leq d-k$, $\deg(r) < k$ and the coefficients of $r$ are
+$$r[i] = \sum_{j \in [0, \left\lfloor{\frac{d-i}{k}}\right\rfloor]} p[i+jk] \cdot t^j.$$
 
-<p><strong>Proof:</strong>
-Recall the substitution method for computing remainders modulo $x^k-s(x)$ for any $s$ with $\deg(s)&lt;k$:</p>
-<ul>
-  <li>While $\deg(p) \geq k$:
-    <ul>
-      <li>In the expression $p(x) = \sum_{i \in [0,d]} p[i] \cdot x^i$, replace every occurence of $x^k$ with $s(x)$.</li>
-      <li>Set $p$ equal to the resulting expression.</li>
-    </ul>
-  </li>
-</ul>
+**Proof:**
+Recall the substitution method for computing remainders modulo $x^k-s(x)$ for any $s$ with $\deg(s)<k$:
+- While $\deg(p) \geq k$:
+    - In the expression $p(x) = \sum_{i \in [0,d]} p[i] \cdot x^i$, replace every occurence of $x^k$ with $s(x)$.
+    - Set $p$ equal to the resulting expression.
 
-<p>If $s$ is a constant polynomial equal to $t$, the algorithm takes only one iteration.
-After this iteration, all terms of the form $p[jk+i] \cdot x^{jk+i}$, for $i&lt;k$, have been replaced with $p[jk+i] \cdot t^j \cdot x^{i}$.
-Thus, all $k$th coefficients of $p$, starting from the $i$th, “land” before $x^i$ in the remainder, scaled by powers of $t$.
-<strong>QED</strong></p>
+If $s$ is a constant polynomial equal to $t$, the algorithm takes only one iteration.
+After this iteration, all terms of the form $p[jk+i] \cdot x^{jk+i}$, for $i<k$, have been replaced with $p[jk+i] \cdot t^j \cdot x^{i}$.
+Thus, all $k$th coefficients of $p$, starting from the $i$th, "land" before $x^i$ in the remainder, scaled by powers of $t$.
+**QED**
 
-<p>This can be interpreted as splitting up $p$ into $k$ “subpolynomials” where each one only has every $k$th coefficient of $p$ (the first one starting with $p[0]$, the second with $p[1]$ etc.).
-The coefficients of the remainder of $p$ modulo $x^k-t$ are then the evaluations of the subpolynomials at $t$.</p>
+This can be interpreted as splitting up $p$ into $k$ "subpolynomials" where each one only has every $k$th coefficient of $p$ (the first one starting with $p[0]$, the second with $p[1]$ etc.).
+The coefficients of the remainder of $p$ modulo $x^k-t$ are then the evaluations of the subpolynomials at $t$.
 
-<h2 id="multivariate-evaluation">Multivariate evaluation</h2>
-<p>Taking the above theorem, what if we evaluate $r$ at, say, $u$?
+
+## Multivariate evaluation
+Taking the above theorem, what if we evaluate $r$ at, say, $u$?
 The result will be a combination of coefficients of $r$ with powers of $u$.
 Overall, we will have combined coefficients of $p$ with terms of the form $t^i \cdot u^j$.
 That is, we will have successfully interpreted $p$ as a bivariate polynomial and will have evaluated that bivariate at $(t,u)$.
 Therefore, after having authenticated (a commitment to) $r$ with (a commitment to) the quotient modulo $x^k-t$, the evaluation of $r$ can be proven using (a commitment to) a standard quotient modulo $x-u$.
-This way, we will have proven the evaluation of the bivariate.</p>
+This way, we will have proven the evaluation of the bivariate.
 
-<p>To be clear, the bivariate is the unique bivariate polynomial whose coefficients are the same as $p$’s coefficients.</p>
+To be clear, the bivariate is the unique bivariate polynomial whose coefficients are the same as $p$'s coefficients.
 
-<p>Alternatively, instead of evaluating $r$ at $u$, we could also repeat the above theorem and perform a modulo reduction by $x^{k’}-u$ for $k’&gt;1$.
-We’d get another remainder $r’$, we could evaluate that remainder (and prove said evaluation with a standard quotient) and we would then have interpreted $p$ as a 3-variate.
-The pattern is clear: we can iterate this process as long as we want – or as long as the remainder’s degree is more than 1.</p>
+Alternatively, instead of evaluating $r$ at $u$, we could also repeat the above theorem and perform a modulo reduction by $x^{k'}-u$ for $k'>1$.
+We'd get another remainder $r'$, we could evaluate that remainder (and prove said evaluation with a standard quotient) and we would then have interpreted $p$ as a 3-variate.
+The pattern is clear: we can iterate this process as long as we want -- or as long as the remainder's degree is more than 1.
 
-<p>And this is what I’d already call a baby version of Zeromorph, maybe always using degrees $k$ that are powers of 2 in order to interpret $p$ as multilinear!</p>
+And this is what I'd already call a baby version of Zeromorph, maybe always using degrees $k$ that are powers of 2 in order to interpret $p$ as multilinear!
 
-<h2 id="to-zeromorph">To Zeromorph</h2>
-<p>The setting in Zeromorph is: we have the <em>values</em> of a multilinear polynomial $f$ on some domain and we would like to commit to $f$ and prove its evaluations outside the domain using a univariate commitment scheme.
-Based on the above, one possible approach is to first compute the <em>coefficients</em> of $f$ and then commit to the univariate polynomial $p$ which has the same coefficients.
-Then, evaluations of $f$ can be proven using univariate quotients as discussed (ie, the re-interpretation of $p$ as a multivariate will lead again to $f$).</p>
 
-<p>However, this is not what Zeromorph does.
-The computation of coefficients from evaluations – an $m$-dimensional discrete Fourier transform (DFT) – is expensive and can be avoided.
-Instead, the paper defines a “univariatization map” that transparently takes care of the values-to-coefficients transformation and that preserves the existence of univariate quotients similar to the ones described here.</p>
+## To Zeromorph
+The setting in Zeromorph is: we have the *values* of a multilinear polynomial $f$ on some domain and we would like to commit to $f$ and prove its evaluations outside the domain using a univariate commitment scheme.
+Based on the above, one possible approach is to first compute the *coefficients* of $f$ and then commit to the univariate polynomial $p$ which has the same coefficients.
+Then, evaluations of $f$ can be proven using univariate quotients as discussed (ie, the re-interpretation of $p$ as a multivariate will lead again to $f$).
 
-<h3 id="future-work">Future work</h3>
-<p>Let me sketch a potential alternative construction, specific to KZG.
-Namely, I’d imagine that a suitable preprocessed SRS gives another simple way to avoid the expensive $m$-variate DFT computation.
+However, this is not what Zeromorph does.
+The computation of coefficients from evaluations -- an $m$-dimensional discrete Fourier transform (DFT) -- is expensive and can be avoided.
+Instead, the paper defines a "univariatization map" that transparently takes care of the values-to-coefficients transformation and that preserves the existence of univariate quotients similar to the ones described here.
+
+
+### Future work
+Let me sketch a potential alternative construction, specific to KZG.
+Namely, I'd imagine that a suitable preprocessed SRS gives another simple way to avoid the expensive $m$-variate DFT computation.
 Then, the above logic might apply directly.
 Suppose that we are in the Zeromorph setting and $f$ is $m$-variate and has degree $d$ in each variable.
 We are given its evaluations over $H^{m}$ where $H \subset F$ has size $d+1$.
@@ -1099,4 +1030,4 @@ We know that there exist $m$-variate Lagrange basis polynomials $\ell_{h}, h \in
 Now, the SRS should contain KZG commitments to the univariate polynomials $b_h$ that have the same coefficients as $\ell_h$.
 Then, by linearity, the univariate polynomial $p$ with the same coefficients as $f$ can be constructed from the given evaluations of $f$ as $p = \sum_{h \in H^m} f(h) \cdot b_h$.
 This way, we can commit to $p$ without an expensive $m$-dimensional DFT.
-(I haven’t worked out how the commitments to the quotients would be computed.)</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Here is a cute simple explanation of the underlying idea (roughly, I think) of how Zeromorph turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients. The paper focuses on the $m$-linear case, so we are even slightly generalizing here.]]></summary></entry></feed>
+(I haven't worked out how the commitments to the quotients would be computed.)]]></content><author><name></name></author><summary type="html"><![CDATA[Here is a cute simple explanation of the underlying idea (roughly, I think) of how Zeromorph turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients. The paper focuses on the $m$-linear case, so we are even slightly generalizing here.]]></summary></entry></feed>

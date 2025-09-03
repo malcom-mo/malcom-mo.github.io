@@ -73,7 +73,7 @@ Security requires that no probabilistic polynomial-time adversary with access to
 The BLS-like transitive signature construction originates in [the GapTS-2 scheme from this paper](https://eprint.iacr.org/2004/215.pdf).
 Let $\G, \hat{\G}, \G_T$ be groups of prime order $p$ with a bilinear map $e : \G \times \hat{\G} \rightarrow \G_T$ and generators $g \in \G, \hat{g} \in \hat{\G}$.
 Denote the group operation as $+$ and its repeated application as $\cdot$.
-Let $H : \{0,1\}^* \rightarrow \hat{\G}$ and $H' : \G \rightarrow \hat{\G}$ be hash functions.
+Let $H : \\{0,1\\}^* \rightarrow \hat{\G}$ and $H' : \G \rightarrow \hat{\G}$ be hash functions.
 Here is an extension of GapTS-2 with aggregation and proofs of possession:
 - $\KeyGen()$: picks random exponent $\sk \in \mathbb{Z}_p^*$ and sets $\pk = \sk \cdot g$, $\pop = \sk \cdot H'(\pk$).
 - $\VerifyPoP(\pk, \pop)$ checks $e(g, \pop) =^? e(\pk, H'(\pk))$.
@@ -160,7 +160,7 @@ We proceed by induction over $d$:
     The single edge corresponds to the signature $\sig_{12} = a \cdot (\groupHash(y_2)-\groupHash(y_1))$.
     $\advB$ can make one $\cdh$ query with input $a \cdot g, a \cdot \hat{g}, \groupHash(y_1)$ to obtain $s = a \cdot b_1 \cdot \hat{g}$.
     This allows computing the other Diffie-Hellman secret as $s + \sig_{12} = a \cdot b_2 \cdot \hat{g}$.
-    (If $x \in \{y_1,y_2\}$, no further query is needed as $a \cdot \groupHash(x)$ is already known.)
+    (If $x \in \\{y_1,y_2\\}$, no further query is needed as $a \cdot \groupHash(x)$ is already known.)
 - Induction step, $d-1 \rightarrow d$.
     Let $y_1, y_2$ be connected nodes in a minimum spanning tree of $C$ such that $\groupHash(y_1) = b_1 \cdot \hat{g}$, $\groupHash(y_2) = b_2 \cdot \hat{g}$ and such that $y_2$ is a leaf, that is, the only edge of $y_2$ in the minimum spanning tree is the edge to $y_1$.
     Let the signature corresponding to the edge between $y_1$ and $y_2$ be $\sig_{12} = a \cdot (\groupHash(y_2)-\groupHash(y_1))$.
@@ -184,9 +184,9 @@ As per the KOE assumption, $\advB$ extracts the lists of secret keys $\SK_1, \do
 
 Let $\sk^* = \log_g(\pk)$.
 If $\Sig$ passed verification, then $\Sig = \sum_{i \in [n]} \apk_i \cdot (H(z_i)-H(x_i))$ where $$\apk_i = \begin{cases}\sum_{\sk \in \SK_i} \sk & \text{if } \pk \in \PK_i \\ c_i \sk^* + \sum_{\sk \in \SK_i} \sk & \text{otherwise}\end{cases}$$
-where $c_i = |\{j \in [|\PK_i|] : \pk_{i,j} = \pk\}|$.
+where $c_i = |\\{j \in [|\PK_i|] : \pk_{i,j} = \pk\\}|$.
 Hence, $B$ first subtracts $\sum_{i \in [n]} \left(\sum_{\sk \in \SK_i} \sk\right) (H(z_i)-H(x_i))$ from $\Sig$ to obtain $\Sig' = \sk^* \cdot \left(\sum_{i \in I} c_i (H(z_i)-H(x_i))\right)$ where $I \subset [n]$ is the set of all $i$ such that $\pk \in \PK_i.$
 $\advB$ then picks $k \in I$ such that the graph induced by the signing queries contains no path from $x_k$ to $z_k$.
-$\advB$ queries signatures $\sig_i' = \sk^* \cdot (H(z_i)-H(x_i))$ for each $i \in I \setminus \{k\}$.
-Finally, $\advB$ computes $\Sig' - \sum_{i \in I \setminus \{k\}} \sig_i' = \sk^* \cdot (H(z_k)-H(x_k))$.
+$\advB$ queries signatures $\sig_i' = \sk^* \cdot (H(z_i)-H(x_i))$ for each $i \in I \setminus \\{k\\}$.
+Finally, $\advB$ computes $\Sig' - \sum_{i \in I \setminus \\{k\\}} \sig_i' = \sk^* \cdot (H(z_k)-H(x_k))$.
 This constitutes a valid forgery for GapTS-2, completing the proof.
