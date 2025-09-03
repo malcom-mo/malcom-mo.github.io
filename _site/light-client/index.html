@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Light Clients from Transitive Signatures | Malcom Mohamed</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Light Clients from Transitive Signatures" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This post is about our 2024 paper’s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood. I’ll specify some aspects that were left out of the paper’s abstract description. Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum." />
+<meta property="og:description" content="This post is about our 2024 paper’s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood. I’ll specify some aspects that were left out of the paper’s abstract description. Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum." />
+<link rel="canonical" href="https://mal.com.de/light-client/" />
+<meta property="og:url" content="https://mal.com.de/light-client/" />
+<meta property="og:site_name" content="Malcom Mohamed" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-29T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Light Clients from Transitive Signatures" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2025-07-29T00:00:00+02:00","datePublished":"2025-07-29T00:00:00+02:00","description":"This post is about our 2024 paper’s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood. I’ll specify some aspects that were left out of the paper’s abstract description. Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum.","headline":"Light Clients from Transitive Signatures","mainEntityOfPage":{"@type":"WebPage","@id":"https://mal.com.de/light-client/"},"url":"https://mal.com.de/light-client/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://mal.com.de/feed.xml" title="Malcom Mohamed" /><script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script type="text/javascript"
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"Wwi3juzJvi6BeTjBBQi+v1WHhU7xvgdrCdbgbNao4CEs7z09qVGxzLuHQmyzyBZKJUIasDNrI/JmnRm6VTOeDw=="}</script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper">
+<a class="site-title" rel="author" href="/">Malcom Mohamed</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger">
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewbox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"></path>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"></div>
+      </nav>
+</div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Light Clients from Transitive Signatures</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-29T00:00:00+02:00" itemprop="datePublished">29 Jul 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This post is about <a href="https://arxiv.org/abs/2410.03347">our 2024 paper</a>’s light client design which has optimistic-case $O(1)$ syncing complexity due to the novel use of transitive signatures under the hood.
+I’ll specify some aspects that were left out of the paper’s abstract description.
+Then, we will see how the design can be implemented for a particular permissioned BFT protocol, namely Istanbul BFT as used by Quorum.</p>
+
+<blockquote class="success">
+  <p><a href="/transitive-signatures/">Another post</a> goes deeper on transitive signatures, the underlying cryptographic primitive.</p>
+</blockquote>
+
+<h2 id="main-idea">Main idea</h2>
+<p>We are in the setting of BFT committee-based blockchains where the validator committee may change after every epoch.
+We’ll say that $V^{(E)}$ is the set of validators for epoch $E$.
+We are investigating how the BFT protocol can be tweaked in order to support light clients which can efficiently (re-)sync with the blockchain after an offline phase.</p>
+
+<p>The standard (old) syncing flow, repeated for all consecutive epochs, works as follows.</p>
+<ul>
+  <li>At some point during epoch $E$, the validators of epoch $E+1$ are decided.</li>
+  <li>At the end of epoch $E$, the last block in the epoch contains the list $V^{(E+1)}$.</li>
+  <li>The commit certificate of this block, therefore, also acts as a signature over $V^{(E+1)}$.</li>
+  <li>A client that is sync’ed up to epoch $E$ and stores $V^{(E)}$ uses the commit certificate to verify $V^{(E+1)}$ and, subsequently, uses $V^{(E+1)}$ to verify all blocks in epoch $E+1$.</li>
+</ul>
+
+<p>Note that validators who leave the committee are assumed to securely erase their secret keys.
+If they didn’t, attacks would be possible.
+But even with this assumption, if the client is out of sync by $m$ epochs, the standard sync flow still requires $O(m)$ work.
+Our protocol, by contrast, aims for $O(1)$.</p>
+
+<h3 id="new-protocol-for-oligopolies">New protocol for “oligopolies”</h3>
+<p>Many practical systems allow for an important simplifying assumption: validators often remain in place across epochs.
+This does not apply to, say, Ethereum where the signing committee changes each slot.
+But it does apply many others.
+So, if this is the case, isn’t there a chance to drastically simplify light client protocols?</p>
+
+<p>Our new protocol is designed to let the just-returning light client re-use the keys of the last known validators as much as possible.
+To this end, each epoch change will come with a new extra signature from which the verifier learns the following: <em>may the same keys that were OK for verifying epoch $E$ be re-used for $E+1$, too?</em>
+Two design choices make this efficient:</p>
+<ol>
+  <li>Relying on pairing-based signatures allows representing the set of keys “that were OK for verifying epoch $E$” as a single aggregated public key (APK), $k^{(E)}$.</li>
+  <li>
+<a href="/transitive-signatures/">Transitive signatures</a> allow compressing consecutive signatures into a single one that asserts: <em>may the same keys that were OK for verifying the last epoch $E$ be re-used for $E+m$, too?</em>
+</li>
+</ol>
+
+<h3 id="details">Details</h3>
+<p>Our new protocol determines a special subset of validators according to a deterministic rule so that all validators know it.
+We think of it as the <em>longest-running quorum</em>.
+The protocol requires that the honest validators output a second signature at the end of each epoch.
+This signature is computed in one of two ways, depending on whether the same longest-running quorum still makes up a quorum for the next round.
+If so, the signed value is just the epoch counter.
+Otherwise, eg, if one of the validators from the quorum leaves, it is the APK $k^{(E)}$ of the new longest-running quorum.</p>
+
+<p>For simplicity, we say that “$k^{(E)}$ gets signed”, understanding that some of these signatures are computed based on the epoch counter alone.</p>
+
+<p>We always think of $k^{(E)}$ as an APK that should be used (by syncing clients in the future) to <strong>verify</strong> the $E$th epoch.
+This means that $k^{(E)}$ is the APK of a subset of $V^{(E-1)}$, the validators of epoch $E-1$.
+It gets decided and, potentially, signed at the <strong>end</strong> of epoch $E$.
+This is because it can only be signed once it is known whether the same validators A) actually signed off on the $E$th epoch and B) will stay on for the next epoch, in particular, whether $k^{(E+1)}=k^{(E)}$.</p>
+
+<blockquote class="info">
+  <p>This is a “liveness” concern that the paper’s model had ignored for simplicity.</p>
+</blockquote>
+
+<h3 id="example-flow">Example flow</h3>
+<p>Consider the good case in which the longest-running quorum remained static over a run fo $m$ epochs.
+In particular, suppose a light client is sync’ed up to epoch $E$, meaning that it stores the list $V^{(E)}$, but the current epoch is already $E+m$.
+When the light client sends a sync request to a full node, the full node will send a bit vector specifying the APK $k^{(E+1)}$ and an aggregate of the transitive signatures over $k^{(E+1)}, \dots, k^{(E+m-1)}$ to the client.
+The aggregated signature will allow the light client to confirm that, indeed, the same quorum that was a quorum in epoch $E$ (and thus authorized to sign the hand-off to epoch $E+1$) is also authorized to sign the hand-off to epoch $E+m-1$.
+Effectively, the client may now safely “jump ahead” and verify $V^{(E+m-1)}$ against $V^{(E)}$.
+Given $V^{(E+m-1)}$, the light client can use the standard flow for the last mile, that is, to verify $V^{(E+m)}$ and then any block from the current epoch $E+m$.</p>
+
+<p>The table shows what gets decided and signed when:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Epoch</th>
+      <th>Current validators</th>
+      <th>Next validators</th>
+      <th>Gets signed at end of epoch</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$E-1$</td>
+      <td>$V^{(E-1)}$</td>
+      <td>$V^{(E)}$</td>
+      <td>$V^{(E)}, k^{(E-1)}$</td>
+    </tr>
+    <tr>
+      <td>$E$</td>
+      <td>$V^{(E)}$</td>
+      <td>$V^{(E+1)}$</td>
+      <td>$V^{(E+1)}, k^{(E)}$</td>
+    </tr>
+    <tr>
+      <td>$E+1$</td>
+      <td>$V^{(E+1)}$</td>
+      <td>$V^{(E+2)}$</td>
+      <td>$V^{(E+2)}, k^{(E+1)}$</td>
+    </tr>
+    <tr>
+      <td>$\dots$</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>$E+m-1$</td>
+      <td>$V^{(E+m-1)}$</td>
+      <td>$V^{(E+m)}$</td>
+      <td>$V^{(E+m)}, k^{(E+m-1)}$</td>
+    </tr>
+    <tr>
+      <td>$E+m$ (current)</td>
+      <td>$V^{(E+m)}$</td>
+      <td>(not yet known)</td>
+      <td>(not yet known)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="better-tolerating-asynchrony">Better tolerating asynchrony</h2>
+<p>For the protocol to be efficient, we want long runs where the same $k^{(E)}$ gets signed after each epoch.
+But, unfortunately, even if the same quorum validators remain active, network asynchrony can still degrade the protocol.
+This is because a validator will only sign on the same $k^{(E)}$ when it has <em>locally seen</em> the quorum validators’ signatures (over the prior round).
+In an asynchronous network, messages can always be delayed or out of order.
+Therefore, it is possible that the longest-running quorum gets prematurely replaced because those validators’ signatures arrive late even if they do eventually arrive.</p>
+
+<p>Wouldn’t it be nice if the future light client’s efficiency did not depend so much on day-to-day network fluctuations?
+There is a straightforward way to address this concern.
+Namely, we stagger the protocol by $d$ rounds:</p>
+<ul>
+  <li>$k^{(E)}$ does not get defined as an APK of validators from $V^{(E-1)}$ who signed $V^{(E)}$ at the end of epoch $E-1$.</li>
+  <li>Instead, it will be the APK of validators from $V^{(E-d-1)}$ who signed $V^{(E-d)}$ at the end of epoch $E-d-1$.</li>
+  <li>Depending on the epoch length, it is overwhelmingly likely that all required signatures will have arrived at all validators by the end of epoch $E$.</li>
+  <li>This way, the protocol only helps the light client skip ahead to $V^{(E+m-d-1)}$ and the “last mile” of standard syncing is a bit longer.</li>
+</ul>
+
+<h2 id="istanbul-bft-integration">Istanbul BFT integration</h2>
+<p>In the <a href="https://github.com/Consensys/quorum/">Quorum</a> blockchain’s <a href="https://arxiv.org/pdf/2002.03613">Istanbul BFT</a> consensus, each block goes through the following rounds:</p>
+<ul>
+  <li>Pre-prepare. The proposer/leader broadcasts the block to all validators.</li>
+  <li>Prepare. The validators respond by broadcasting prepare-votes/signatures over the proposal.</li>
+  <li>Commit. After seeing enough prepare votes, validators broadcast commit-votes over the proposal.</li>
+  <li>After seeing enough commit-votes, everyone locally decides the block.
+Formally, each validator forms a so-called commit certificate which is just the collection of commit-votes (of which there are, by definition, at least $2f+1$).</li>
+</ul>
+
+<p>A pre-prepare will only be answered if the “previous block” referenced in the proposed block already has a commit certificate.</p>
+
+<h3 id="adding-the-new-signatures">Adding the new signatures</h3>
+<p>We integrate our new signatures over $k$ into this structure.
+First, we want every commit certificate to also contain the validators’ signatures over $k$.
+For validators to sign $k$ (and the same $k$!), a unique description of $k$ must be included in the pre-prepare/proposal.
+Then, the consensus logic will ensure that all commit certificates authenticate the same $k$.</p>
+
+<p>Concretely, we must add two rules:</p>
+<ol>
+  <li>A pre-prepare is only recognized as valid if it includes the description of an APK $k$ that is the APK of a quorum of validators who all sent commit-votes over the <em>previous</em> end-of-epoch block (or, for the staggered variant, $d$ epoch blocks before).</li>
+  <li>A commit-vote is only recognized as valid if it comes with a separate signature, made with our special scheme, over $k$ from the proposal.</li>
+</ol>
+
+<p>For the description of $k$ we can choose a bit vector of the validators whose keys go into $k$.
+To check rule 2 using the bit vector, we just check if we indeed received the required commit-votes from the indicated validators (and that there are $2f+1$ of them).
+Note that if we put $k$ itself in the proposal and not a bit vector representation, then checking rule 2 would be inefficient: the validators would have to see if there is <em>any</em> subset of validators who issued commit-votes and whose keys added up to $k$.</p>
+
+<p>It is the proposer’s job to choose $k$.
+For consensus not to slow down, the proposer may always track how long each validator is active and always choose the $2f+1$ longest-running validators.
+Ideally, modulo momentary asynchrony as mentioned above, this should result in long runs of the same $k$ which makes future light clients $O(1)$ as desired. <img class="emoji" title=":raised_hands:" alt=":raised_hands:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f64c.png" height="20" width="20"></p>
+
+<h2 id="final-notes">Final notes</h2>
+<h3 id="implementation">Implementation</h3>
+<p>An implementation of the signature scheme and a light client <em>simulation</em> with mock data is included in the <a href="https://github.com/malcom-mo/acsac24">code released along with our paper</a>.
+<!--An exmaple integration of our protocol into the Quorum blockchain is available [here](asdf).--></p>
+
+<h3 id="prover-cost">“Prover cost”</h3>
+<p>One of the reasons we focus on the Quorum blockchain is that it uses Istanbul BFT, the same consensus that was used by Celo1.
+We can draw a comparison between our protocol and <a href="https://eprint.iacr.org/2021/1361.pdf">Celo1’s light client</a>.
+This is interesting because back then, Celo1 ran one of the historically largest zero-knowledge proofs for their light clients.
+The circuit was of size $2^{28}$ and the proving cost was, accordingly, quite high.
+Compare this with our signature-based solution:</p>
+
+<blockquote class="success">
+  <p>In our protocol, prover cost is merely signature aggregation.</p>
+</blockquote>
+
+  </div>
+<a class="u-url" href="/light-client/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+
+      <div class="footer-col footer-col-1">
+<ul class="social-media-list">
+<li><a href="mailto:m%40mal.com.de"><svg class="svg-icon"><use xlink:href="/assets/mail-icon.svg#mail"></use></svg> <span class="username">m@mal.com.de</span></a></li>
+<li><a href="https://github.com/malcom-mo"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">malcom-mo</span></a></li>
+</ul>
+© 2025
+        Malcom Mohamed
+      </div>
+
+    </div>
+  </div>
+</footer>
+</body>
+
+</html>

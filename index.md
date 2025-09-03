@@ -10,5 +10,5 @@ I'm a PhD student in computer science at Ruhr-Universität Bochum, Germany.
 
 ## Random Projects
 - [DKIC - DomainKeys Identified Content](https://github.com/malcom-mo/dkic).
-  An authentication system for static web sites served by third-party providers -- like this site which is hosted on GitHub Pages.
+  A data authenticity system for static web sites served by third-party providers -- like this site which is hosted on GitHub Pages.
   Intended to prevent the hoster/CDN from performing MITM attacks.

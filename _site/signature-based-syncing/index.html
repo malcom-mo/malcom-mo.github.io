@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Towards More General Signature-Based Syncing | Malcom Mohamed</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Towards More General Signature-Based Syncing" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This post outlines a preliminary follow-up research idea for our light client protocol. Let’s see if the signature-based design can be taken further! :thinking:" />
+<meta property="og:description" content="This post outlines a preliminary follow-up research idea for our light client protocol. Let’s see if the signature-based design can be taken further! :thinking:" />
+<link rel="canonical" href="https://mal.com.de/signature-based-syncing/" />
+<meta property="og:url" content="https://mal.com.de/signature-based-syncing/" />
+<meta property="og:site_name" content="Malcom Mohamed" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-08-19T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Towards More General Signature-Based Syncing" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2025-08-19T00:00:00+02:00","datePublished":"2025-08-19T00:00:00+02:00","description":"This post outlines a preliminary follow-up research idea for our light client protocol. Let’s see if the signature-based design can be taken further! :thinking:","headline":"Towards More General Signature-Based Syncing","mainEntityOfPage":{"@type":"WebPage","@id":"https://mal.com.de/signature-based-syncing/"},"url":"https://mal.com.de/signature-based-syncing/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://mal.com.de/feed.xml" title="Malcom Mohamed" /><script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script type="text/javascript"
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"/pyA2Gs80ICj2XbmYnMwcmNkWSrbyDWRe+mMo1V1Rb9C80S79CBHbkbBIZxLRna2lGk5D0vcKfRLbh0gynCiDA=="}</script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper">
+<a class="site-title" rel="author" href="/">Malcom Mohamed</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger">
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewbox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"></path>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"></div>
+      </nav>
+</div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Towards More General Signature-Based Syncing</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-08-19T00:00:00+02:00" itemprop="datePublished">19 Aug 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This post outlines a preliminary follow-up research idea for <a href="/light-client/">our light client protocol</a>.
+Let’s see if the signature-based design can be taken further! <img class="emoji" title=":thinking:" alt=":thinking:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f914.png" height="20" width="20"></p>
+
+<h2 id="the-problem">The problem</h2>
+<p>In the <a href="https://arxiv.org/abs/2410.03347">paper</a> and in <a href="/light-client/">the prior post</a>, we made the simplifying assumption that there is a long-running static subset of validators in the committee.
+That is, there is a guaranteed quorum that is authorized to (and does) sign a long run of consecutive epoch transitions.
+As such, the protocol based on transitive signatures cannot support fully dynamic committees without such a static quorum.</p>
+
+<p>But what if this assumption doesn‘t hold, like for Ethereum’s sync committees?
+Can we have a similarly simple signature-based protocol for <em>arbitrary cross-committee syncing</em>?</p>
+
+<h2 id="reducing-scope">Reducing scope</h2>
+<p>This seems like a tough problem, so let’s first go to a reduced special case where committees have size 1.
+That is, we are now looking at standard certificate chains.
+For example, Alice may sign Bob’s public key, Bob may sign Charlie’s and Charlie may sign Davy’s so that a verifier who only knows and trusts Alice’s public key can walk along the chain and have confidence in any Davy-signature.
+If the chain grows to length $m$, the verifier needs to download all $m$ intermediary signatures and public keys.
+So the problem statement for now is: devise a signature scheme for signing public keys so that a certificate chain is verifiable in $O(1)$.</p>
+
+<p>I searched Google Scholar and could not find this functionality anywhere in the literature.
+The closest notion seems to be from <a href="https://eprint.iacr.org/2008/037.pdf">this paper</a> where the parties run interactive protocols with each other and some central authority, while I’d rather try to aim for a non-interactive process.
+$\newcommand{\KeyGen}{\mathsf{KeyGen}}
+\newcommand{\Sign}{\mathsf{Sign}}
+\newcommand{\Combine}{\mathsf{Combine}}
+\newcommand{\Verify}{\mathsf{Verify}}
+\newcommand{\pk}{\mathsf{pk}}
+\newcommand{\sk}{\mathsf{sk}}
+\newcommand{\Alice}{\mathsf{Alice}}
+\newcommand{\Bob}{\mathsf{Bob}}
+\newcommand{\Charlie}{\mathsf{Charlie}}$</p>
+
+<h2 id="ad-hoc-solution-idea">Ad-hoc solution idea</h2>
+<p>As an exercise, I tried coming up with a new scheme. <img class="emoji" title=":slightly_smiling_face:" alt=":slightly_smiling_face:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f642.png" height="20" width="20"> 
+To start, I find it helps to view the entire certificate chain that authorizes Davy‘s public key as a single object.
+Namely, it is a single Alice-signature over Davy‘s key – it just happened to be iteratively derived via the intermediary signers Bob and Charlie.
+Stated like this, we‘re looking for the following kind of interface:</p>
+<ul>
+  <li>$\KeyGen() \Rightarrow \sk, \pk$</li>
+  <li>$\Sign(\sk_{\Alice}, \pk_{\Bob}) \Rightarrow \sigma_{AB}$
+    <ul>
+      <li>$\Sign$ might take additional arguments like the previous signature $\sigma_{XA}$ in an ongoing chain.</li>
+    </ul>
+  </li>
+  <li>$\Combine(\sigma_{AB}, \sigma_{BC}) \Rightarrow \sigma_{AC}$</li>
+  <li>$\Verify(\pk_{\Alice}, \pk_Z, \sigma_{AZ}) \Rightarrow 0/1$
+    <ul>
+      <li>Might also take, eg, the previous signature $\sigma_{XA}$ in an ongoing chain.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Security needs to be defined similarly to transitive signatures, with an adversary unable to output a signature $\sigma_{AZ}$ if the <em>certification graph</em> contains no path from Alice to Z.
+For this sketch of the idea, I will not even worry about the details like how to model the adversary’s oracle access here.</p>
+
+<h3 id="construction">Construction</h3>
+<p>How could Bob‘s signature be used to transform Alice‘s signature over Bob‘s pk into a signature over Charlie‘s pk?
+To start, I had the vague intuition that Alice‘s signature probably somehow needs to incorporate a shared secret with Bob.
+With a scheme based on discrete logarithms, naturally enough, this might be a Diffie-Hellman secret.
+Next, for the Combine function to output short signatures, a pairing-based scheme seems appropriate.
+After going through a bit of literature, I started thinking that <a href="https://www.iacr.org/archive/eurocrypt2006/40040472/40040472.pdf">the way sequential aggregation works for Waters signatures</a> looks like it can be made compatible with embedded Diffie-Hellman secrets.
+While skimming over such papers, ie, <a href="https://arxiv.org/pdf/0802.1113">this one in particular</a>, I found it especially interesting to see how Waters signatures have previously been modified for <em>different</em> extra signing properties.</p>
+
+<p>Let $G, \hat{G}, G_T$ be groups of prime order $p$ with a bilinear pairing $e : G \times \hat{G} \rightarrow G_T$ and generators $g \in G, \hat{g} \in \hat{G}$.
+Here is the construction I came up with, in additive notation:</p>
+<ul>
+  <li>$\KeyGen()$:
+    <ul>
+      <li>Pick random exponents $a, r \in \mathbb{Z}_p^*$</li>
+      <li>$\sk_\Alice = (a, a \cdot g, r)$</li>
+      <li>$\pk_\Alice = (a \cdot \hat{g}, r a \cdot g, r \cdot g)$</li>
+    </ul>
+  </li>
+  <li>$\Sign(\sk_{\Alice}, \pk_{\Bob}, \sigma_{XA})$:
+    <ul>
+      <li>If $\sigma_{XA}$ is empty (there is no ongoing chain), set $\sigma_{XA,2}=g$</li>
+      <li>Pick random exponent $r’$</li>
+      <li>$\sigma_1 = a \cdot \sigma_{XA,2} - r’ \cdot \pk_{\Bob, 2}$</li>
+      <li>$\sigma_2 = r’ \cdot \pk_{\Bob, 3}$</li>
+      <li>$\sigma_{AB} = (\sigma_1, \sigma_2)$</li>
+    </ul>
+  </li>
+  <li>$\Combine(\sigma_{AB}, \sigma_{BC})$:
+    <ul>
+      <li>$\sigma_1 = \sigma_{AB,1} + \sigma_{BC, 1}$</li>
+      <li>$\sigma_2 = \sigma_{BC, 2}$</li>
+      <li>$\sigma_{AC} = (\sigma_1, \sigma_2)$</li>
+    </ul>
+  </li>
+  <li>$\Verify(\pk_{\Alice}, \pk_Z, \sigma_{AZ}, \sigma_{XA})$:
+    <ul>
+      <li>$e(\sigma_{AZ, 1}, \hat{g}) =^? e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(\sigma_{AZ,2}, \pk_{\Bob, 1})$</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="correctness-of-verification">Correctness of verification:</h4>
+<p>Denote Bob’s secret exponents as $b$ and $s$.
+If $\sigma_{AB}$ comes from $\Sign$, the verification check becomes</p>
+
+\[\begin{align}
+e(\sigma_{AB, 1}, \hat{g}) &amp;= e(a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2}, \hat{g}) \\
+&amp;= e(a \cdot \sigma_{XA,2} - r' s b \cdot g, \hat{g}) \\
+&amp;= e(\sigma_{XA,2}, a \cdot \hat{g}) - e(r' s \cdot g, b \cdot \hat{g}) \\
+&amp;= e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(r' \cdot \pk_{\Bob, 3}, \pk_{\Bob, 1}) \\
+&amp;= e(\sigma_{XA,2}, \pk_{\Alice, 1}) - e(\sigma_{AB,2}, \pk_{\Bob, 1})
+\end{align}\]
+
+<h4 id="correctness-of-combination">Correctness of combination:</h4>
+<p>If $\sigma_{AB}$ comes from $\Sign(\sk_\Alice, \pk_\Bob, \sigma_{XA})$ and $\sigma_{BC}$ comes from $\Sign(\sk_\Bob, \pk_\Charlie, \sigma_{AB})$,
+then $\Combine$ outputs $\sigma_{AC} = (\sigma_1, \sigma_2)$ where</p>
+
+\[\begin{align}
+\sigma_1 &amp;= \sigma_{AB,1} + \sigma_{BC, 1} \\
+&amp;= a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2} + b \cdot \sigma_{AB,2} - s' \cdot \pk_{\Charlie, 2} \\
+&amp;= a \cdot \sigma_{XA,2} - r' \cdot \pk_{\Bob, 2} + b r' \cdot \pk_{\Bob,3} - s' \cdot \pk_{\Charlie, 2} \\
+&amp;= a \cdot \sigma_{XA,2} - r' s b \cdot g + b r' s \cdot g - s' \cdot \pk_{\Charlie, 2} \\
+&amp;= a \cdot \sigma_{XA,2} - s' \cdot \pk_{\Charlie, 2} \\
+\sigma_2 &amp;= \sigma_{BC, 2} \\
+&amp;= s' \cdot \pk_{\Charlie, 3}
+\end{align}\]
+
+<p>which is a valid Alice-signature over Charlie’s public key.</p>
+
+<h4 id="security">Security:</h4>
+<p>TBD but the intention is that the secrecy of $a \cdot \sigma_{XA,2}$ makes it impossible to forge $\sigma_{AB}$ without knowing Bob’s exponent.
+Transitively, forging $\sigma_{AZ}$ should be impossible without knowing the secret exponent of someone who is reachable from Alice in the certification graph.
+(Or is this obviously insecure because there is some trivial attack…?! Fwiw, I couldn’t spot any.)</p>
+
+<h2 id="next-steps">Next steps?</h2>
+<p>To work on this systematically, the first step would be to properly formalize the desired properties of the scheme (with support for groups of signers instead of single signers).
+From this we would see if the candidate direct construction – or some version of it – is any good.
+Besides, there should also be generic constructions, say, from SNARKs/IVC, which should be specified and compared against the direct construction.
+Finally, we might build a light client protocol in a similar spirit as <a href="https://hackmd.io/@VicChaos/HyQJedYhkx">the one with transitive signatures</a>.</p>
+
+  </div>
+<a class="u-url" href="/signature-based-syncing/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+
+      <div class="footer-col footer-col-1">
+<ul class="social-media-list">
+<li><a href="mailto:m%40mal.com.de"><svg class="svg-icon"><use xlink:href="/assets/mail-icon.svg#mail"></use></svg> <span class="username">m@mal.com.de</span></a></li>
+<li><a href="https://github.com/malcom-mo"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">malcom-mo</span></a></li>
+</ul>
+© 2025
+        Malcom Mohamed
+      </div>
+
+    </div>
+  </div>
+</footer>
+</body>
+
+</html>

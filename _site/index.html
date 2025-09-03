@@ -20,7 +20,9 @@
 window.MathJax = {
   tex: {
     inlineMath: [['$', '$'], ['\\(', '\\)']],
-    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
   },
   options: {
     skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
@@ -32,7 +34,7 @@ window.MathJax = {
   async
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
-<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"ngIY49XK+NAIcpmiSOQlXK3RWtBwZ0HariO0lnsXBiApREA5ziRNTVsw/dMMaQeWYG907sd2ZP5dop4Bm8WhAA=="}</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"28VKrN2FgD9rQUHUMv5d778uqTFNSCHWSjVjJZwyZ4rciy7Xihi/4pqIpqAY/+HulW9qQJTRThZofi8ez3BICQ=="}</script>
 </head>
 <body><header class="site-header" role="banner">
 
@@ -62,10 +64,46 @@ I’m a PhD student in computer science at Ruhr-Universität Bochum, Germany.</p
 <h2 id="random-projects">Random Projects</h2>
 <ul>
   <li><a href="https://github.com/malcom-mo/dkic">DKIC - DomainKeys Identified Content</a>.
-An authentication system for static web sites served by third-party providers – like this site which is hosted on GitHub Pages.
+A data authenticity system for static web sites served by third-party providers – like this site which is hosted on GitHub Pages.
 Intended to prevent the hoster/CDN from performing MITM attacks.</li>
 </ul>
-</div>
+<h2 class="post-list-heading">Posts</h2>
+    <ul class="post-list"><li><span class="post-meta">19 Aug 2025</span>
+        <h3>
+          <a class="post-link" href="/signature-based-syncing/">
+            Towards More General Signature-Based Syncing
+          </a>
+        </h3></li><li><span class="post-meta">29 Jul 2025</span>
+        <h3>
+          <a class="post-link" href="/transitive-signatures/">
+            Notes on Transitive BLS Signatures
+          </a>
+        </h3></li><li><span class="post-meta">29 Jul 2025</span>
+        <h3>
+          <a class="post-link" href="/light-client/">
+            Light Clients from Transitive Signatures
+          </a>
+        </h3></li><li><span class="post-meta">03 Jul 2025</span>
+        <h3>
+          <a class="post-link" href="/amts-and-hyperproofs/">
+            Notes on AMTs and Hyperproofs
+          </a>
+        </h3></li><li><span class="post-meta">11 Jun 2025</span>
+        <h3>
+          <a class="post-link" href="/boomy/">
+            Multivariate Quotients and Gröbner Bases (Notes on Boomy)
+          </a>
+        </h3></li><li><span class="post-meta">02 May 2025</span>
+        <h3>
+          <a class="post-link" href="/univariate-sumcheck/">
+            Why is there no univariate sumcheck?
+          </a>
+        </h3></li><li><span class="post-meta">11 Nov 2024</span>
+        <h3>
+          <a class="post-link" href="/zeromorph/">
+            Notes on Zeromorph
+          </a>
+        </h3></li></ul></div>
 
       </div>
     </main><footer class="site-footer h-card">

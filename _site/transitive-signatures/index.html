@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Notes on Transitive BLS Signatures | Malcom Mohamed</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Notes on Transitive BLS Signatures" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This is the first post about our 2024 ACSAC paper on light client syncing after offline phases. In a nutshell, we experiment with light clients based on so-called transitive signatures. This post discusses the underlying cryptographic primitive. Specifically, I’ll define transitive (multi-)signatures, present a BLS-based construction and argue that it’s secure under a cryptographic assumption (in a bit more detail than our paper’s appendix had space for)." />
+<meta property="og:description" content="This is the first post about our 2024 ACSAC paper on light client syncing after offline phases. In a nutshell, we experiment with light clients based on so-called transitive signatures. This post discusses the underlying cryptographic primitive. Specifically, I’ll define transitive (multi-)signatures, present a BLS-based construction and argue that it’s secure under a cryptographic assumption (in a bit more detail than our paper’s appendix had space for)." />
+<link rel="canonical" href="https://mal.com.de/transitive-signatures/" />
+<meta property="og:url" content="https://mal.com.de/transitive-signatures/" />
+<meta property="og:site_name" content="Malcom Mohamed" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-29T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Notes on Transitive BLS Signatures" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2025-07-29T00:00:00+02:00","datePublished":"2025-07-29T00:00:00+02:00","description":"This is the first post about our 2024 ACSAC paper on light client syncing after offline phases. In a nutshell, we experiment with light clients based on so-called transitive signatures. This post discusses the underlying cryptographic primitive. Specifically, I’ll define transitive (multi-)signatures, present a BLS-based construction and argue that it’s secure under a cryptographic assumption (in a bit more detail than our paper’s appendix had space for).","headline":"Notes on Transitive BLS Signatures","mainEntityOfPage":{"@type":"WebPage","@id":"https://mal.com.de/transitive-signatures/"},"url":"https://mal.com.de/transitive-signatures/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://mal.com.de/feed.xml" title="Malcom Mohamed" /><script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script type="text/javascript"
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"BzuVxr8qmt9vph5BRpAvj4NPJUdpU7jtscmi0ppNmFYl9jn8krhVTvTRapsmFDSxGUCgAT04ldVq4TipfYbIBg=="}</script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Malcom Mohamed</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Notes on Transitive BLS Signatures</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-29T00:00:00+02:00" itemprop="datePublished">29 Jul 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This is the first post about <a href="https://arxiv.org/abs/2410.03347">our 2024 ACSAC paper</a> on light client syncing after offline phases.
+In a nutshell, we experiment with light clients based on so-called transitive signatures.
+This post discusses the underlying cryptographic primitive.
+Specifically, I’ll</p>
+<ul>
+  <li>define transitive (multi-)signatures,</li>
+  <li>present a BLS-based construction and</li>
+  <li>argue that it’s secure under a cryptographic assumption (in a bit more detail than our paper’s appendix had space for).</li>
+</ul>
+
+<blockquote class="success">
+  <p><a href="/light-client/">Another post</a> shows a light client protocol design.</p>
+</blockquote>
+
+<h2 id="motivation">Motivation</h2>
+<p>Most light client protocols assume that consensus uses standard or only slightly restricted signature schemes (eg, over a SNARK-friendly elliptic curve).
+In <a href="https://eprint.iacr.org/2021/1361.pdf">protocols</a> that <a href="https://arxiv.org/pdf/2210.00264">aim to be</a> particularly <a href="https://eprint.iacr.org/2022/1205.pdf">verifier-friendly</a>, untrusted helper nodes create succinct proofs that a new block is the successor of the light client’s last known block.
+That proof covers some or all of the intermediary signature verifications that the light client would otherwise have to perform on its own.
+But signature checks within proofs are notoriously expensive.
+Our research explores whether this complexity be avoided when using specialized signatures in consensus.</p>
+
+<h2 id="transitive-signatures">Transitive signatures</h2>
+<p>The kind of signatures we use in the paper are <a href="https://people.csail.mit.edu/rivest/pubs/MR02b.pdf">known in the literature</a> as transitive signatures.
+They have the interesting property that signatures by the same signer on messages that are <em>consecutive</em> in a well-defined sense can be aggregated.
+Then, the aggregated signature can be verified with respect to the public key, the first message and the last message <em>regardless of how many messages came in between</em>.
+More formally, transitive signatures allow signing edges of a graph and aggregation can be performed along paths such that verification complexity is independent of the path length.</p>
+
+<p>In our paper, this definition is extended to (aggregate) multi-signatures where the single signer from the standard definition is replaced with groups of signers.
+Each group may sign a different message sequence.
+For completeness, I’ll now also make the <a href="https://eprint.iacr.org/2007/264.pdf">proofs of possession</a> explicit that serve to instantiate the paper’s abstract “registration phase” (formally, knowledge of secret key assumption).
+A transitive multi-signature then consists of:
+$\newcommand{\KeyGen}{\mathsf{KeyGen}}
+\newcommand{\sk}{\mathsf{sk}}
+\newcommand{\SK}{\mathsf{SK}}
+\newcommand{\pk}{\mathsf{pk}}
+\newcommand{\PK}{\mathsf{PK}}
+\newcommand{\pop}{\mathsf{pop}}
+\newcommand{\apk}{\mathsf{apk}}
+\newcommand{\VerifyPoP}{\mathsf{VerifyPoP}}
+\newcommand{\Sign}{\mathsf{Sign}}
+\newcommand{\Aggregate}{\mathsf{Aggregate}}
+\newcommand{\Verify}{\mathsf{Verify}}
+\newcommand{\G}{\mathbb{G}}
+\newcommand{\chall}{\mathsf{Chall}}
+\newcommand{\cdh}{\mathsf{CDH}}
+\newcommand{\groupHash}{H}
+\newcommand{\advA}{A}
+\newcommand{\advB}{B}
+\newcommand{\sig}{\sigma}
+\newcommand{\Sig}{S}$</p>
+<ul>
+  <li>$\KeyGen() \Rightarrow \sk, \pk, \pop$</li>
+  <li>$\VerifyPoP(\pk, \pop) \Rightarrow 0/1$</li>
+  <li>$\Sign(\sk, x, y) \Rightarrow \sigma$</li>
+  <li>$\Aggregate(\sigma_1, \dots, \sigma_N) \Rightarrow \Sig$</li>
+  <li>$\Verify((\PK_1, \dots, \PK_n), ((x_1, z_1), \dots, (x_n, z_n)), \Sig) \Rightarrow 0/1$</li>
+</ul>
+
+<p>Correctness means that if $\PK_1, \dots, \PK_n$ are lists of public keys, if for each $\pk_{i,j} \in \PK_i$, $\sigma_{i,j}$ and $\sigma_{i,j}’$ are signatures accepted by $\Verify(((\pk_{i,j})), ((x_i, y_i)), \sigma_{i,j})$ and, respectively, by $\Verify(((\pk_{i,j})), ((y_i, z_i)), \sigma_{i,j}’)$ and if $\Sig$ is generated by $\Aggregate(\sigma_{1,1}, \dots, \sigma_{n, |\PK_n|}, \sigma_{1,1}’, \dots, \sigma_{n, |\PK_n|}’)$, then $\Verify((\PK_1, \dots, \PK_n), ((x_1, z_1), \dots, (x_n, z_n)), \Sig)$ will return 1.
+This also means that further applications of $\Aggregate$ with signatures over messages like $(z_i, w_i)$ lead to a single signature over the messages $(x_i, w_i)$.</p>
+
+<p>Security requires that no probabilistic polynomial-time adversary with access to a signing oracle for a fixed public key $\pk$ can, with non-negligible probability, output lists of public keys $\PK_1, \dots, \PK_n$, lists of proofs $\Pi_1 = (\pi_{1,1}, \dots, \pi_{1, |Pi_1|}), \dots, \Pi_n = (\pi_{n,1}, \dots, \pi_{n,|\Pi_n|})$, a signature $\Sig$ and $(x_1, z_1), \dots, (x_n, z_n)$ such that</p>
+<ul>
+  <li>$\Verify((\PK_1, \dots, PK_n), ((x_1,z_1),\dots,(x_n,z_n)), \Sig)$ accepts,</li>
+  <li>for all $i \in [n]$, $| \PK_i | = |\Pi_i|$ and, for all $j \in [|\PK_i|]$ with $\pk_{i,j} \neq \pk$, $\VerifyPoP(\pk_{i,j}, \pi_{i,j})$ accepts,</li>
+  <li>there is $k \in [n]$ such that $\pk \in \PK_k$ and there is no path between $x_k$ and $z_k$ in the graph induced by the signing queries to the $\pk$ oracle.</li>
+</ul>
+
+<h2 id="construction">Construction</h2>
+<p>The BLS-like transitive signature construction originates in <a href="https://eprint.iacr.org/2004/215.pdf">the GapTS-2 scheme from this paper</a>.
+Let $\G, \hat{\G}, \G_T$ be groups of prime order $p$ with a bilinear map $e : \G \times \hat{\G} \rightarrow \G_T$ and generators $g \in \G, \hat{g} \in \hat{\G}$.
+Denote the group operation as $+$ and its repeated application as $\cdot$.
+Let $H : {0,1}^* \rightarrow \hat{\G}$ and $H’ : \G \rightarrow \hat{\G}$ be hash functions.
+Here is an extension of GapTS-2 with aggregation and proofs of possession:</p>
+<ul>
+  <li>$\KeyGen()$: picks random exponent $\sk \in \mathbb{Z}_p^*$ and sets $\pk = \sk \cdot g$, $\pop = \sk \cdot H’(\pk$).</li>
+  <li>$\VerifyPoP(\pk, \pop)$ checks $e(g, \pop) =^? e(\pk, H’(\pk))$.</li>
+  <li>$\Sign(\sk, x, y)$ sets $\sigma = \sk \cdot (H(y)-H(x))$.</li>
+  <li>$\Aggregate(\sigma_1, \dots, \sigma_N)$ sets $\Sig = \sigma_1 + \cdots + \sigma_N$.</li>
+  <li>$\Verify((\PK_1, \dots, \PK_n), ((x_1, z_1), \dots, (x_n, z_n)), \Sig)$ sets $\apk_i = \sum_{j \in [|\PK_i|]} \pk_{i,j}$ for all $i \in [n]$ and checks $e(g, \Sig) =^? \sum_{i \in [n]} e(\apk_i, H(z_i)-H(x_i))$.</li>
+</ul>
+
+<h2 id="gapts-2">GapTS-2</h2>
+<p>GapTS-2 is the above scheme with the restrictions $n = 1$ and $|\PK_i|=1$, no $\pop$ and no functions $\Aggregate$ and $\VerifyPoP$.
+For completeness, below is a proof of its security based on the following assumption.</p>
+
+<h3 id="q-one-more-co-computational-diffie-hellman-q-om-co-cdh">$q$-one-more co-computational Diffie-Hellman ($q$-OM co-CDH)</h3>
+<p>Let $a$ be uniformly sampled from $\mathbb{Z}_p^{*}$, let $\chall$ be an algorithm that samples $b \in \mathbb{Z}_p^{*}$ uniformly at random and returns $b \cdot g$ and let $\cdh$ be an ideal oracle that returns $xy \cdot \hat{g}$ given $x \cdot g$, $x \cdot \hat{g}$ and $y \cdot \hat{g}$.
+Under the $q$-one-more co-computational Diffie-Hellman assumption there is no probabilistic polynomial time algorithm that, on input $a \cdot g, a \cdot \hat{g}$ and with oracle access to $\chall$ and $\cdh$</p>
+<ul>
+  <li>makes less than $q$ calls to $\cdh$,</li>
+  <li>makes exactly $q$ calls to $\chall$ which return $b_1 \cdot g, \dots, b_q \cdot g$ and</li>
+  <li>outputs, with non-negligible probability, $a b_1 \cdot g, \dots, a b_q \cdot g$.</li>
+</ul>
+
+<h3 id="plausibility-of-the-assumption">Plausibility of the assumption</h3>
+<p>In <a href="https://eprint.iacr.org/2021/866.pdf">this paper from Asiacrypt 2021</a>, the plausibility of a one-more CDH assumption which uses $\G_1=\G_2$ is argued for with respect to a restricted class of attackers, namely, in the <strong>generic group model</strong> (GGM).
+The same paper also argues for the plausibility of the one-more discrete logarithm assumption.
+In fact, hardness of the one-more CDH assumption follows from a strengthened version of the one-more discrete log assumption.
+To prove the one-more discrete log assumption, as well as its strenghened version, the paper presents a new lemma about the size of the intersection of the zeroes of polynomials in finite fields with certain arrangements of hyperplanes.
+This lemma serves as an alternative to the Schwartz-Zippel lemma which standard proofs in the GGM use (but which did not suffice for the studied one-more assumptions).</p>
+
+<p>It is argued <a href="https://eprint.iacr.org/2023/1348.pdf">in this CCS 2023 paper</a> that the previous paper’s claim about the one-more discrete logarithm assumption carries over to the setting of asymmetric pairing groups where $\G_1 \neq \G_2$.
+However, this requires another new lemma that generalizes the other paper’s lemma that replaced Schwartz-Zippel.
+Specifically, the previous lemma’s hyperplanes are generalized to degree-2 hypersurfaces.
+Besides using the improved lemma, the structure of the proof for the discrete log assumption resembles the previous paper’s.
+I <strong>believe</strong> that the improved lemma can also be used to prove GGM hardness of the <em>strenghtened</em> one-more discrete log assumption in the asymmetric group setting.
+This should then also imply the hardness of the one-more CDH assumption required for GapTS-2.</p>
+
+<p><strong>More concretely</strong>, as far as I understand, the best current algorithm for $q$-one-more co-computational Diffie-Hellman in practically relevant elliptic curves would be an adaptation of a <a href="https://link.springer.com/article/10.1007/s00145-009-9047-0">discrete logarithm attack like this one</a>:
+If $d$ divides either $p-1$ or $p+1$ and the attacker makes $d$ queries, the attack complexity is only around $O(\sqrt{p/d})$ group operations.
+Now, widely-used pairing friendly curves are specifically designed such that $p-1$ is divisible by a moderately large power of two:
+For example, BLS12-381 has $p$ of around 255 bits such that $p-1$ is divisible by $2^{32}$ (and also by a few other small primes).
+Thus, when the adversary makes correspondingly many $\cdh$ queries, the attack complexities are roughly $2^{111}$ group operations.</p>
+
+<h3 id="security-of-gapts-2">Security of GapTS-2</h3>
+<p>Security requires that no attacker $\advA$ with a signing oracle for a fixed public key $\pk$ can, with non-negligible probability, output $x, z$ and a signature $\sig$ such that $\Verify((\pk),(x,z),\sig)$ accepts even though there is no path from $x$ to $z$ in the graph $G$ (where queries to the $\pk$ oracle implicitly add nodes and edges to $G$).
+Suppose there existed such an adversary $\advA$ that made $q$ queries to $\groupHash$ which is modelled as a random oracle.
+We construct an attacker $\advB$ against $q$-OM co-CDH.</p>
+
+<h4 id="step-1-using-a">Step 1. Using $A$</h4>
+<p>$\advB$ starts with $a \cdot g$ and $a \cdot \hat{g}$ and hands $a \cdot g$ to $\advA$ as the public key.
+$\advB$ must answer $\advA$’s random oracle and signing queries.
+The interaction with $\advA$ works as follows.</p>
+
+<ul>
+  <li>To simulate the random oracle, if $\groupHash$ is queried for a value for which it has been queried before, the previous answer is returned.
+   To answer a new query to $\groupHash$, a query to $\chall$ is made and the response is returned.</li>
+  <li>When $\advA$ makes a signing query for $(y_1, y_2)$ where the graph already contains a path between $y_1$ and $y_2$, $\advB$ uses $\Aggregate$.
+  Otherwise, $\advB$ calls $\cdh$ with $a \cdot g$, $a \cdot \hat{g}$ and $\groupHash(y_2)-\groupHash(y_1)$ to obtain $a \cdot (\groupHash(y_2)-\groupHash(y_1))$ which is returned as the signature.
+  This way, the edges in $G$ which correspond to signatures created from $\cdh$ calls form a minimum spanning tree in each connected component.</li>
+  <li>
+    <p>Eventually, $\advA$ outputs $x, z, \sig$ such that $e(g, \sig) = e(a \cdot g, \groupHash(z)-\groupHash(x))$, which implies $\sig = a \cdot (b_z-b_x) \cdot \hat{g}$, where $b_x$ and $b_z$ are determined by the $\chall$ calls from the corresponding $\groupHash$ simulations.
+  <!-- This way, the edges in $G$ which correspond to signatures created from $\cdh$ calls form a minimum spanning tree. -->
+  <!-- For example: -->
+  <!-- ``` -->
+  <!-- y_1 ────[(1) CDH edge]───► y_2 -->
+  <!--  │                          │ -->
+  <!--  │                    [(2) CDH edge] -->
+  <!--  │                          │ -->
+  <!--  │                          ▼ -->
+  <!--  └─[(3) Aggregate edge]──► y_3 --></p>
+
+    <p><!--  The CDH edges give a minimum spanning tree. -->
+  <!-- ``` --></p>
+  </li>
+</ul>
+
+<p>Next, $\advB$ makes a $\cdh$ query with $a \cdot g, a \cdot \hat{g}$ and $\groupHash(x)$ to obtain $a \cdot b_x \cdot \hat{g}$.
+By adding $\sigma$, $\advB$ then obtains $a \cdot b_z \cdot \hat{g}$.
+Note that two $\chall$ calls were needed to define $\groupHash(x)$ and $\groupHash(z)$ but, thanks to $\sigma$, only one $\cdh$ call was needed to obtain <em>both</em> Diffie-Hellman secrets.</p>
+
+<h4 id="step-2-a-few-more-queries">Step 2. A few more queries</h4>
+<p>We now analyze how many further $\cdh$ queries are needed to obtain the Diffie-Hellman secrets corresponding to all other $\chall$ queries.
+For $\chall$ calls that defined some $\groupHash(y)$ where $y$ is not part of any signature, that is, not a node in $G$, $\advB$ needs to make one $\cdh$ query.
+It remains to be shown that for every connected component of $G$ with $c$ nodes and a minimum spanning tree with $d&lt;c$ edges – which means that $c$ $\chall$ calls and $d$ $\cdh$ calls were made –, $\advB$ needs at most $c-d$ further $\cdh$ calls to obtain the $c$ Diffie-Hellman secrets.
+Then, all in all, $\advB$ will have obtained one more Diffie-Hellman secret than $\cdh$ calls were made and we’re done.
+We proceed by induction over $d$:</p>
+
+<ul>
+  <li>Hypothesis.
+  For a connected component $C$ with $c$ nodes ($\chall$ calls) and a minimum spanning tree with $d$ edges ($\cdh$ calls), $c-d$ further $\cdh$ calls suffice to obtain all $c$ Diffie-Hellman secrets.</li>
+  <li>Base case, $d=1$.
+  If the minimum spanning tree of the component $C$ has one edge, then $C$ has two nodes, say $y_1$ and $y_2$ with hashes $\groupHash(y_1) = b_1 \cdot \hat{g}$ and $\groupHash(y_2) = b_2 \cdot \hat{g}$.
+  The single edge corresponds to the signature $\sig_{12} = a \cdot (\groupHash(y_2)-\groupHash(y_1))$.
+  $\advB$ can make one $\cdh$ query with input $a \cdot g, a \cdot \hat{g}, \groupHash(y_1)$ to obtain $s = a \cdot b_1 \cdot \hat{g}$.
+  This allows computing the other Diffie-Hellman secret as $s + \sig_{12} = a \cdot b_2 \cdot \hat{g}$.
+  (If $x \in {y_1,y_2}$, no further query is needed as $a \cdot \groupHash(x)$ is already known.)</li>
+  <li>Induction step, $d-1 \rightarrow d$.
+  Let $y_1, y_2$ be connected nodes in a minimum spanning tree of $C$ such that $\groupHash(y_1) = b_1 \cdot \hat{g}$, $\groupHash(y_2) = b_2 \cdot \hat{g}$ and such that $y_2$ is a leaf, that is, the only edge of $y_2$ in the minimum spanning tree is the edge to $y_1$.
+  Let the signature corresponding to the edge between $y_1$ and $y_2$ be $\sig_{12} = a \cdot (\groupHash(y_2)-\groupHash(y_1))$.
+  Let $C’$ be the graph obtained from removing $y_2$ and all its edges from $C$.
+  $C’$ has $c-1$ nodes and has a minimum spanning tree with $d-1$ edges, namely the tree of $C$ minus the node $y_2$.
+  By the induction hypothesis, $c-1-(d-1) = c-d$ $\cdh$ calls suffice to obtain the $c-1$ Diffie-Hellman secrets corresponding to the nodes in $C’$.
+  In particular, $\advB$ can obtain $s = a \cdot b_1 \cdot \hat{g}$.
+  This allows computing the remaining Diffie-Hellman secret as $s + \sig_{12} = a \cdot b_2 \cdot \hat{g}$.</li>
+</ul>
+
+<h2 id="security-of-signature-aggregation">Security of signature aggregation</h2>
+<p>As per <a href="https://arxiv.org/abs/2410.03347">our paper (appendix A.2)</a>, security of the multi-signer scheme can be reduced to the single signer scheme.
+That is, a succesful attacker $A$ against the $n&gt;1$ version implies an attacker $B$ against the $n=1$ version, ie, GapTS-2.
+For simplicity, we make a knowledge of exponent (KOE) assumption (which holds, for example, in the algebraic group model), by which the adversary’s ability to output valid proofs of possession implies that $B$ can use $A$’s code to determine the corresponding secret keys.</p>
+
+<p>So, $\advB$ starts in the $n=1$ security experiment with a public key $\pk$.
+$\advB$ forwards $\pk$ to $\advA$ and passes each of $\advA$’s oracle queries along to the signing oracele or to the random oracle.
+Eventually, $\advA$ outputs $\PK_1, \dots, \PK_n, \Pi_1, \dots, \Pi_n, (x_1,z_1), \dots, (x_n,z_n)$ and $\Sig$.
+As per the KOE assumption, $\advB$ extracts the lists of secret keys $\SK_1, \dots, \SK_n$ corresponding to the public keys other than $\pk$.
+(At each position $j$ where the entry in $\PK_i$ is $\pk$, the list $\SK_i$ has a 0.)</p>
+
+<p>Let $\sk^* = \log_g(\pk)$.
+If $\Sig$ passed verification, then $\Sig = \sum_{i \in [n]} \apk_i \cdot (H(z_i)-H(x_i))$ where \(\apk_i = \begin{cases}\sum_{\sk \in \SK_i} \sk &amp; \text{if } \pk \in \PK_i \\ c_i \sk^* + \sum_{\sk \in \SK_i} \sk &amp; \text{otherwise}\end{cases}\)
+where $c_i = |{j \in [|\PK_i|] : \pk_{i,j} = \pk}|$.
+Hence, $B$ first subtracts $\sum_{i \in [n]} \left(\sum_{\sk \in \SK_i} \sk\right) (H(z_i)-H(x_i))$ from $\Sig$ to obtain $\Sig’ = \sk^* \cdot \left(\sum_{i \in I} c_i (H(z_i)-H(x_i))\right)$ where $I \subset [n]$ is the set of all $i$ such that $\pk \in \PK_i.$
+$\advB$ then picks $k \in I$ such that the graph induced by the signing queries contains no path from $x_k$ to $z_k$.
+$\advB$ queries signatures $\sig_i’ = \sk^* \cdot (H(z_i)-H(x_i))$ for each $i \in I \setminus {k}$.
+Finally, $\advB$ computes $\Sig’ - \sum_{i \in I \setminus {k}} \sig_i’ = \sk^* \cdot (H(z_k)-H(x_k))$.
+This constitutes a valid forgery for GapTS-2, completing the proof.</p>
+
+  </div><a class="u-url" href="/transitive-signatures/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+
+      <div class="footer-col footer-col-1"><ul class="social-media-list"><li><a href="mailto:m%40mal.com.de"><svg class="svg-icon"><use xlink:href="/assets/mail-icon.svg#mail"></use></svg> <span class="username">m@mal.com.de</span></a></li><li><a href="https://github.com/malcom-mo"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">malcom-mo</span></a></li></ul>
+&copy; 2025
+        Malcom Mohamed
+      </div>
+
+    </div>
+  </div>
+</footer>
+</body>
+
+</html>

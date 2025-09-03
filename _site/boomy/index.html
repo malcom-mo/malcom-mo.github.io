@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Multivariate Quotients and Gröbner Bases (Notes on Boomy) | Malcom Mohamed</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Multivariate Quotients and Gröbner Bases (Notes on Boomy)" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Learning about zero-knowledge proofs, one kind of gets the impression that these systems would have to either encode computations using univariate polynomials and then rely on quotienting techniques or encode computations using multivariate polynomials and then use the sumcheck protocol." />
+<meta property="og:description" content="Learning about zero-knowledge proofs, one kind of gets the impression that these systems would have to either encode computations using univariate polynomials and then rely on quotienting techniques or encode computations using multivariate polynomials and then use the sumcheck protocol." />
+<link rel="canonical" href="https://mal.com.de/boomy/" />
+<meta property="og:url" content="https://mal.com.de/boomy/" />
+<meta property="og:site_name" content="Malcom Mohamed" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-06-11T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Multivariate Quotients and Gröbner Bases (Notes on Boomy)" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2025-06-11T00:00:00+02:00","datePublished":"2025-06-11T00:00:00+02:00","description":"Learning about zero-knowledge proofs, one kind of gets the impression that these systems would have to either encode computations using univariate polynomials and then rely on quotienting techniques or encode computations using multivariate polynomials and then use the sumcheck protocol.","headline":"Multivariate Quotients and Gröbner Bases (Notes on Boomy)","mainEntityOfPage":{"@type":"WebPage","@id":"https://mal.com.de/boomy/"},"url":"https://mal.com.de/boomy/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://mal.com.de/feed.xml" title="Malcom Mohamed" /><script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script type="text/javascript"
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"i/vIzn/A275aTYHY5S4jMj/RwRR8g2hkL6bC2zBfi+m/hRW4gQZy1xmguuUPc/oRdfuY1lEkJo/UeaCCg502Cw=="}</script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper">
+<a class="site-title" rel="author" href="/">Malcom Mohamed</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger">
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewbox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"></path>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"></div>
+      </nav>
+</div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Multivariate Quotients and Gröbner Bases (Notes on Boomy)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-06-11T00:00:00+02:00" itemprop="datePublished">11 Jun 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Learning about zero-knowledge proofs, one kind of gets the impression that these systems would have to <em>either</em></p>
+<ul>
+  <li>encode computations using univariate polynomials and then rely on quotienting techniques <em>or</em>
+</li>
+  <li>encode computations using multivariate polynomials and then use the sumcheck protocol.</li>
+</ul>
+
+<p><a href="https://youtu.be/CWbx_rnj7LI?si=Vn6ZqP4WKWqL9bhb&amp;t=3529">Eg, this talk at 59:00</a> (over-)simplified: “quotienting only applies to univariates”.</p>
+
+<p>Here, I’d like to go over multivariate quotienting and some of the theory behind it.
+The recent <a href="https://eprint.iacr.org/2023/1599.pdf">Boomy paper</a> applies these ideas to <a href="https://eprint.iacr.org/2011/587.pdf">PST</a> and is my main point of reference. <img class="emoji" title=":+1:" alt=":+1:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f44d.png" height="20" width="20">
+Another source is the textbook “Ideals, Varieties and Algorithms” (IVA – later referring to the 4th edition).</p>
+
+<blockquote class="info">
+  <p><a href="/univariate-sumcheck/">Another post talked about univariate sumcheck</a> and how the lines between univariate and multivariate encodings are blurry because univariates can be used to emulate multivariates.</p>
+</blockquote>
+
+<h2 id="recap-univariate-quotients">Recap: univariate quotients</h2>
+<p>Univariate quotients underlie single-point and multi-point <a href="https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf">KZG</a> proofs as well as <a href="https://eprint.iacr.org/2018/828.pdf">Aurora-style rowcheck</a>.
+The idea is that a univariate polynomial $f(x)$’s vanishing over a set of points $V \subset F$ is equivalent to a single Euclidean division resulting in a zero remainder.
+Generally, Euclidean division by some polynomial $g(x)$ says that $f$ can always be expressed as $f(x) = r(x) + q(x) g(x)$.
+Ie, $r$ is the remainder of $f$ mod $g$.
+This means that $f$ agrees with $r$ on all those points where $g$ is zero.
+Then, $r$ being the zero polynomial would mean that $f$ vanishes on the points described by $g$.
+For quotient proofs, take $g$ as the vanishing polynomial of the set $V$.</p>
+
+<h2 id="gröbner-bases">Gröbner bases</h2>
+<p>To generalize the univariate remainder theorem to $m$-variate polynomials, we need so-called Gröbner bases.
+In a nutshell, if $V \subset F^m$ instead of $V \subset F$ like above, then the vanishing polynomial $g(x)$ needs to be replaced with a set of polynomials $g_1(x_1, \dots, x_m), \dots, g_t(x_1, \dots, x_m)$ called a Gröbner basis.
+Then, we can say that $f(x_1, \dots, x_m)$ vanishes over $V \subset F^m$ if and only if there is a decomposition $f = \sum_{i \in [t]} q_i g_i.$</p>
+
+<p>In what follows, let’s quickly try to address the following questions:
+What are $g_1, \dots, g_t$ a “basis” of?
+What are explicit expressions for them?
+What is $t$?
+How do they generalize the remainder theorem and the concept of a univariate vanishing polynomial?</p>
+
+<h3 id="some-definitions">Some definitions</h3>
+<ul>
+  <li>$F$ is a finite field, so all subsets $V \subset F^m$ are finite, too.
+$F$ has large characteristic, all polynomials’ degrees will be smaller than $\mathrm{char}(F)$.</li>
+  <li>An (algebraic) variety is the joint zero set of multiple polynomials, so the points where the polynomials all simultaneously vanish.</li>
+  <li>An ideal $J$ is a set of polynomials that is closed under multiplication, so if $f \in J$, then $f q \in J$ for all $q$, and addition, in that if $f_1,f_2 \in J$, then $f_1+f_2 \in J$. An ideal is maximal if no other ideal (besides $F[x_1, \dots, x_m]$) strictly contains it.</li>
+  <li>If the difference of two polynomials lies in an ideal, then the two polynomials are equivalent modulo the ideal.</li>
+</ul>
+
+<h3 id="basic-facts">Basic facts</h3>
+<ul>
+  <li>The set of all polynomials vanishing on a variety $V$, denoted $I(V)$, is an ideal (IVA Chapter 1.4, Lemma 6).
+Vanishing on $V$ is the same as being in $I(V)$.</li>
+  <li>By the Hilbert basis theorem (IVA Chapter 2.5, Theorem 4), all ideals are finitely generated.
+So given an ideal $J$, it is possible to find $f_1, \dots, f_t$ such that $J = \langle f_1, \dots, f_t \rangle = \left\{\sum_{i \in [t]} f_i q_i \mid q_i \in F[x_1, \dots, x_m]\right\}$.</li>
+  <li>A Gröbner basis of an ideal $J$ is a generating set $g_1, \dots, g_t$ with the property that $f \in J$ if and only if $f$ can be represented as a combination of Gröbner basis elements, $f = \sum_{i \in [t]} g_i q_i$ (IVA Chapter 2.6, Corollary 2).</li>
+  <li>A generating set where all leading monomials are coprime is a Gröbner basis (IVA Chapter 2.9, Theorem 3 and Proposition 4).</li>
+  <li>A Gröbner basis is reduced if all elements have leading coefficient 1 and no element’s monomials are divisible by other elements’ leading terms.
+Reduced Gröbner bases are unique, unlike other generating sets or Gröbner bases (IVA Chapter 2.7, Theorem 5).</li>
+  <li>For every univariate ideal $J \subset F[x]$, there is always a single polynomial $g(x)$ such that $J = \langle g \rangle$.
+So $g$ (made monic by dividing by the leading coefficient, if needed) by itself is the unique reduced Gröbner basis.
+Equivalence modulo $J$ is the same as equivalence modulo $g$.</li>
+</ul>
+
+<h2 id="pst-and-boomy">PST and Boomy</h2>
+<p>Ok, now, let’s apply the theory described so far to explain multivariate quotienting.
+First, how to generalize KZG openings to multivariates?
+Based on the above, a quotient proof for $f(v_1, \dots, v_m)=0$ has to express $f$ as a combination of the elements of the reduced Gröbner basis for the ideal of the single-point variety $V = {(v_1, \dots, v_m)}$.
+To find the Gröbner basis, consider the polynomials $g_1 = x_1 - v_1, \dots, g_m = x_m - v_m$ and put $J = \langle g_1, \dots, g_m \rangle$.
+Clearly, $J \subseteq I(V)$ because everything in $J$ vanishes on $V$.
+But $J$ is actually maximal, which implies $J = I(V)$.
+Since $g_1, \dots, g_m$ are monic with mutually prime leading monomials, they are the reduced Gröbner basis.
+This is PST.
+Doing this for multi-point varieties gives Boomy.</p>
+
+<p>For a general variety $V \subset F^m$, the explicit expressions for $I(V)$’s Gröbner basis polynomials $g_1, \dots, g_t$ can get complicated—-and $t$ can be bigger than $m$.
+The Gröbner basis of the ideal of an arbitrary finite set of points could be constructed using properties of the intersection of ideals (IVA Chapter 4.3, Theorem 11 ff.) or with more efficient methods like <a href="https://link.springer.com/chapter/10.1007/3-540-11607-9_3">Buchberger-Möller</a> (or <a href="https://link.springer.com/article/10.1007/s00200-022-00586-z">just Möller?</a>), <a href="https://link.springer.com/chapter/10.1007/11617983_11">Farr-Gao</a>, <a href="https://arxiv.org/pdf/0711.3475">EssGB</a>.
+But still, it is worth looking for sets of points where the Gröbner basis is particularly simple.</p>
+
+<h2 id="zerocheck">Zerocheck</h2>
+<p>The Boomy paper mentions two classes of sets of points $V$ whose ideals have “nice” Gröbner bases.
+One of them is the Cartesian product $V = V_1 \times \cdots \times V_m$ where $V_1, \dots, V_m \subset F$.
+The reduced Gröbner basis simply consists of $g_1, \dots, g_m$ where $g_i = \prod_{v \in V_i} (x-v)$, so each $g_i$ is the vanishing polynomial of $V_i$.
+This class is interesting because it includes hypercubes like ${0,1}^m$ and ${\pm 1}^m$.
+To show that a polynomial vanishes over the whole hypercube, protocols like <a href="https://eprint.iacr.org/2019/550.pdf">Spartan</a> use the sumcheck protocol.
+We now know how to do the same thing with quotients: show divisibility by the reduced Gröbner basis of $I(V)$.</p>
+
+<p>Conceptually, this generalizes the univariate Aurora Hadamard/rowcheck technique, though it seems computationally more expensive.
+For example, consider $m$-linear polynomials $f,g,h$ for which we want to show that $fg \equiv h$ over ${0,1}^m.$
+Equivalently, $f(x)g(x) = h(x) + \sum_{i \in [m]} q_i(x) (x_i^2-x_i)$ for some $q_i$ because ${x_i^2-x_i}$ is the reduced Gröbner basis of $I({0,1}^m)$.
+Because the left-hand side has degree 2 in each $x_i$, $q_i$ cannot depend on $x_i$ at all.
+Moreoever, it is possible to compute the $q_i$ incrementally, say, starting with $q_m$, so that $q_i$ has degree 2 in $x_1, \dots, x_{i-1}$ and degree 1 in $x_{i+1}, \dots, x_m$.
+So $q_i$ is described by $3^{i-1} \cdot 2^{m-i}$ coefficients – or can maybe be interpolated from as many evaluations.
+I do not know what the best computation strategy would be.
+But it feels like these $3^i$ factors would make it more complex than the univariate case which would cost $O(m 2^m)$ via FFT. :man-shrugging:</p>
+
+<h3 id="side-notes">Side notes</h3>
+<p>The Cartesian product case is the same as <a href="https://web.archive.org/web/20170829121759id_/http://www.math.tau.ac.il/~nogaa/PDFS/null2.pdf">Alon’s Combinatorial Nullstellensatz</a>, a theorem used in combinatorics.
+The name is a reference to Hilbert’s Nullstellensatz, a theorem that was originally stated for algebraically closed fields like the complex numbers (covered in IVA Chapter 4.1).
+<a href="https://arxiv.org/pdf/1405.2398">Clark’s refinement</a> of Alon gives some insight into <em>how</em> the combinatorial one works for finite fields.</p>
+
+<p>In the textbook “Computational Commutative Algebra 2” by Kreuzer and Robbiano, 2nd edition, chapters 6.2 and 6.3, I found another perspective on the Cartesian product case.
+Namely, they explain how $I(V_1 \times \cdots \times V_m)$ is a so-called “distraction” of an ideal that is generated only by monomials, specifically $\langle x_1^{|V_1|}, \dots, x_m^{|V_m|} \rangle$ (Proposition 6.3.8).</p>
+
+<h2 id="last-thoughts">Last thoughts</h2>
+<ul>
+  <li>The other class of nice Gröbner bases described in the Boomy paper is for ideals of sets of points whose entries are distinct in at least one coordinate. I plan to revisit this one in a future post. But are there any other nice classes? :thinking_face:</li>
+  <li>Gröbner basis also have a classical application in cryptanalysis, nowadays often <a href="https://eprint.iacr.org/2024/250.pdf">targeting arithmetization-friendly hash functions</a>. There is a recent <a href="https://eprint.iacr.org/2021/870.pdf">survey/tutorial paper</a> about these use cases.</li>
+  <li>
+<a href="https://eprint.iacr.org/2024/572.pdf">Recently</a>, Gröbner bases have also been utilized in the formal verification of arithmetic circuits / constraint systems.</li>
+</ul>
+
+<p>In summary, yes, if we really wanted, we could totally do multivariate quotienting similarly to univariate quotienting. <img class="emoji" title=":heavy_check_mark:" alt=":heavy_check_mark:" src="https://github.githubassets.com/images/icons/emoji/unicode/2714.png" height="20" width="20"></p>
+
+  </div>
+<a class="u-url" href="/boomy/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+
+      <div class="footer-col footer-col-1">
+<ul class="social-media-list">
+<li><a href="mailto:m%40mal.com.de"><svg class="svg-icon"><use xlink:href="/assets/mail-icon.svg#mail"></use></svg> <span class="username">m@mal.com.de</span></a></li>
+<li><a href="https://github.com/malcom-mo"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">malcom-mo</span></a></li>
+</ul>
+© 2025
+        Malcom Mohamed
+      </div>
+
+    </div>
+  </div>
+</footer>
+</body>
+
+</html>

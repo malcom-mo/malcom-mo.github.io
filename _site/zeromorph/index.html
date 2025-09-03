@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Notes on Zeromorph | Malcom Mohamed</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Notes on Zeromorph" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Here is a cute simple explanation of the underlying idea (roughly, I think) of how Zeromorph turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients. The paper focuses on the $m$-linear case, so we are even slightly generalizing here." />
+<meta property="og:description" content="Here is a cute simple explanation of the underlying idea (roughly, I think) of how Zeromorph turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients. The paper focuses on the $m$-linear case, so we are even slightly generalizing here." />
+<link rel="canonical" href="https://mal.com.de/zeromorph/" />
+<meta property="og:url" content="https://mal.com.de/zeromorph/" />
+<meta property="og:site_name" content="Malcom Mohamed" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-11-11T00:00:00+01:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Notes on Zeromorph" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-11-11T00:00:00+01:00","datePublished":"2024-11-11T00:00:00+01:00","description":"Here is a cute simple explanation of the underlying idea (roughly, I think) of how Zeromorph turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients. The paper focuses on the $m$-linear case, so we are even slightly generalizing here.","headline":"Notes on Zeromorph","mainEntityOfPage":{"@type":"WebPage","@id":"https://mal.com.de/zeromorph/"},"url":"https://mal.com.de/zeromorph/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://mal.com.de/feed.xml" title="Malcom Mohamed" /><script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script type="text/javascript"
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"V3bAxuNrYS7jH14Ig9EWm4p4Y7M48dF3HJBxFOBmCG6KM13/HyC1W5iQ6SFkrWz1gkqicYCXo8xJnlMD0B+ECA=="}</script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Malcom Mohamed</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Notes on Zeromorph</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-11-11T00:00:00+01:00" itemprop="datePublished">11 Nov 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Here is a cute simple explanation of the underlying idea (roughly, I think) of how <a href="https://eprint.iacr.org/2023/917.pdf">Zeromorph</a> turns a univariate polynomial evaluation argument into an $m$-variate evaluation argument using $m$ quotients.
+The paper focuses on the $m$-linear case, so we are even slightly generalizing here.
+<!--No commutative diagrams or fancy terminology such as "Kronecker substitution" or "module isomorphism though not a ring isomorphism" will appear.--></p>
+
+<h2 id="preliminaries">Preliminaries</h2>
+<ul>
+  <li><strong>Notation:</strong> If $p$ is a univariate polynomial in $x$ over a field $F$, its coefficient in front of $x^j$ is indexed as $p[j]$ and $\deg(p)$ denotes its degree.</li>
+  <li>Given univariate polynomials $p$, $m$ and $r$, $r$ is the remainder of $p$ modulo $m$ if and only if there exists a (quotient) polynomial $q$ such that \(p = r + q \cdot m\) and $\deg(r)&lt;\deg(m), \deg(q) \leq \deg(p) - \deg(m)$.</li>
+  <li>By the <em>factor theorem</em>, a univariate polynomial $p$ vanishes at $t \in F$ if and only if $p$ is divisible by $x-t$.</li>
+  <li>A generalization is the <em>remainder theorem</em> by which, for any $t$, $p$ can be uniquely decomposed as $p = p(t) + q \cdot (x-t)$.
+That is, the value (constant polynomial) $p(t)$ is the remainder of $p$ modulo $x-t$.</li>
+</ul>
+
+<h2 id="higher-degree-factors">Higher-degree factors</h2>
+<p>The following is a generalized remainder theorem which can be proven from the basic rules for substituting variables when performing modulo reduction algorithmically.</p>
+
+<p><strong>Proposition (<a href="https://www.tandfonline.com/doi/abs/10.1080/0020739X.2018.1522676">Theorem 2.12 from here</a>):</strong>
+For any $t \in F$, any univariate polynomial $p$ of degree $d$ can be uniquely decomposed as
+\(p = r + q \cdot (x^k-t)\)
+such that $\deg(q) \leq d-k$, $\deg(r) &lt; k$ and the coefficients of $r$ are
+\(r[i] = \sum_{j \in [0, \left\lfloor{\frac{d-i}{k}}\right\rfloor]} p[i+jk] \cdot t^j.\)</p>
+
+<p><strong>Proof:</strong>
+Recall the substitution method for computing remainders modulo $x^k-s(x)$ for any $s$ with $\deg(s)&lt;k$:</p>
+<ul>
+  <li>While $\deg(p) \geq k$:
+    <ul>
+      <li>In the expression $p(x) = \sum_{i \in [0,d]} p[i] \cdot x^i$, replace every occurence of $x^k$ with $s(x)$.</li>
+      <li>Set $p$ equal to the resulting expression.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>If $s$ is a constant polynomial equal to $t$, the algorithm takes only one iteration.
+After this iteration, all terms of the form $p[jk+i] \cdot x^{jk+i}$, for $i&lt;k$, have been replaced with $p[jk+i] \cdot t^j \cdot x^{i}$.
+Thus, all $k$th coefficients of $p$, starting from the $i$th, “land” before $x^i$ in the remainder, scaled by powers of $t$.
+<strong>QED</strong></p>
+
+<p>This can be interpreted as splitting up $p$ into $k$ “subpolynomials” where each one only has every $k$th coefficient of $p$ (the first one starting with $p[0]$, the second with $p[1]$ etc.).
+The coefficients of the remainder of $p$ modulo $x^k-t$ are then the evaluations of the subpolynomials at $t$.</p>
+
+<h2 id="multivariate-evaluation">Multivariate evaluation</h2>
+<p>Taking the above theorem, what if we evaluate $r$ at, say, $u$?
+The result will be a combination of coefficients of $r$ with powers of $u$.
+Overall, we will have combined coefficients of $p$ with terms of the form $t^i \cdot u^j$.
+That is, we will have successfully interpreted $p$ as a bivariate polynomial and will have evaluated that bivariate at $(t,u)$.
+Therefore, after having authenticated (a commitment to) $r$ with (a commitment to) the quotient modulo $x^k-t$, the evaluation of $r$ can be proven using (a commitment to) a standard quotient modulo $x-u$.
+This way, we will have proven the evaluation of the bivariate.</p>
+
+<p>To be clear, the bivariate is the unique bivariate polynomial whose coefficients are the same as $p$’s coefficients.</p>
+
+<p>Alternatively, instead of evaluating $r$ at $u$, we could also repeat the above theorem and perform a modulo reduction by $x^{k’}-u$ for $k’&gt;1$.
+We’d get another remainder $r’$, we could evaluate that remainder (and prove said evaluation with a standard quotient) and we would then have interpreted $p$ as a 3-variate.
+The pattern is clear: we can iterate this process as long as we want – or as long as the remainder’s degree is more than 1.</p>
+
+<p>And this is what I’d already call a baby version of Zeromorph, maybe always using degrees $k$ that are powers of 2 in order to interpret $p$ as multilinear!</p>
+
+<h2 id="to-zeromorph">To Zeromorph</h2>
+<p>The setting in Zeromorph is: we have the <em>values</em> of a multilinear polynomial $f$ on some domain and we would like to commit to $f$ and prove its evaluations outside the domain using a univariate commitment scheme.
+Based on the above, one possible approach is to first compute the <em>coefficients</em> of $f$ and then commit to the univariate polynomial $p$ which has the same coefficients.
+Then, evaluations of $f$ can be proven using univariate quotients as discussed (ie, the re-interpretation of $p$ as a multivariate will lead again to $f$).</p>
+
+<p>However, this is not what Zeromorph does.
+The computation of coefficients from evaluations – an $m$-dimensional discrete Fourier transform (DFT) – is expensive and can be avoided.
+Instead, the paper defines a “univariatization map” that transparently takes care of the values-to-coefficients transformation and that preserves the existence of univariate quotients similar to the ones described here.</p>
+
+<h3 id="future-work">Future work</h3>
+<p>Let me sketch a potential alternative construction, specific to KZG.
+Namely, I’d imagine that a suitable preprocessed SRS gives another simple way to avoid the expensive $m$-variate DFT computation.
+Then, the above logic might apply directly.
+Suppose that we are in the Zeromorph setting and $f$ is $m$-variate and has degree $d$ in each variable.
+We are given its evaluations over $H^{m}$ where $H \subset F$ has size $d+1$.
+We know that there exist $m$-variate Lagrange basis polynomials $\ell_{h}, h \in H^m$ such that $f = \sum_{h \in H^m} f(h) \cdot \ell_h.$
+Now, the SRS should contain KZG commitments to the univariate polynomials $b_h$ that have the same coefficients as $\ell_h$.
+Then, by linearity, the univariate polynomial $p$ with the same coefficients as $f$ can be constructed from the given evaluations of $f$ as $p = \sum_{h \in H^m} f(h) \cdot b_h$.
+This way, we can commit to $p$ without an expensive $m$-dimensional DFT.
+(I haven’t worked out how the commitments to the quotients would be computed.)</p>
+
+  </div><a class="u-url" href="/zeromorph/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+
+      <div class="footer-col footer-col-1"><ul class="social-media-list"><li><a href="mailto:m%40mal.com.de"><svg class="svg-icon"><use xlink:href="/assets/mail-icon.svg#mail"></use></svg> <span class="username">m@mal.com.de</span></a></li><li><a href="https://github.com/malcom-mo"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">malcom-mo</span></a></li></ul>
+&copy; 2025
+        Malcom Mohamed
+      </div>
+
+    </div>
+  </div>
+</footer>
+</body>
+
+</html>

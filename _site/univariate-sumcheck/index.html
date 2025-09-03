@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Why is there no univariate sumcheck? | Malcom Mohamed</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Why is there no univariate sumcheck?" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Is there a sumcheck PIOP that only uses oracles to univariate polynomials (unlike the standard multivariate sumcheck protocol), has a linear-time prover (unlike Aurora’s quotient-based protocol), sends no intermediary oracles (unlike the protocol from this article)? :thinking:" />
+<meta property="og:description" content="Is there a sumcheck PIOP that only uses oracles to univariate polynomials (unlike the standard multivariate sumcheck protocol), has a linear-time prover (unlike Aurora’s quotient-based protocol), sends no intermediary oracles (unlike the protocol from this article)? :thinking:" />
+<link rel="canonical" href="https://mal.com.de/univariate-sumcheck/" />
+<meta property="og:url" content="https://mal.com.de/univariate-sumcheck/" />
+<meta property="og:site_name" content="Malcom Mohamed" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-05-02T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Why is there no univariate sumcheck?" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2025-05-02T00:00:00+02:00","datePublished":"2025-05-02T00:00:00+02:00","description":"Is there a sumcheck PIOP that only uses oracles to univariate polynomials (unlike the standard multivariate sumcheck protocol), has a linear-time prover (unlike Aurora’s quotient-based protocol), sends no intermediary oracles (unlike the protocol from this article)? :thinking:","headline":"Why is there no univariate sumcheck?","mainEntityOfPage":{"@type":"WebPage","@id":"https://mal.com.de/univariate-sumcheck/"},"url":"https://mal.com.de/univariate-sumcheck/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://mal.com.de/feed.xml" title="Malcom Mohamed" /><script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script type="text/javascript"
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"1Zo1wJo7q8s2cN0/7nR0chvsdN5zFNXT+4DOUFNCgtC46N9a2UYxVOhjV96vgriAluUPJRZ74rFn0oCnNOoqCw=="}</script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper">
+<a class="site-title" rel="author" href="/">Malcom Mohamed</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger">
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewbox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"></path>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"></div>
+      </nav>
+</div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Why is there no univariate sumcheck?</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-05-02T00:00:00+02:00" itemprop="datePublished">02 May 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Is there a sumcheck PIOP that</p>
+<ul>
+  <li>only uses oracles to univariate polynomials (unlike the <a href="https://eprint.iacr.org/2019/317.pdf">standard multivariate sumcheck protocol</a>),</li>
+  <li>has a linear-time prover (unlike <a href="https://eprint.iacr.org/2018/828.pdf">Aurora</a>’s quotient-based protocol),</li>
+  <li>sends no intermediary oracles (unlike the protocol from <a href="https://hackmd.io/@relgabizon/ryGTQXWri">this article</a>)? <img class="emoji" title=":thinking:" alt=":thinking:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f914.png" height="20" width="20">
+</li>
+</ul>
+
+<p>The last restriction also eliminates the common-sense approach of combining the standard multivariate protocol with an extra multilinear evaluation proof such as <a href="https://eprint.iacr.org/2022/420.pdf">Gemini</a>’s, <a href="https://eprint.iacr.org/2023/917.pdf">Zeromorph</a>, <a href="https://eprint.iacr.org/2023/1284.pdf">Logup-GKR</a>’s or <a href="https://eprint.iacr.org/2024/2099">HyperKZG</a> because all of those send intermediary oracles (to quotients or even and odd parts).</p>
+
+<p>I think the short answer is no.
+My longer answer - still just an intuition - is simply that multivariate oracles are like multiple univariate oracles in one, so, of course, you cannot replace the former with the latter without sending further auxiliary oracles.
+This feels true regardless of the chosen basis, so little stands to be gained from any potential roots-of-unity tricks when switching to the Lagrange basis.
+I’ll expand on the last statement in the remainder of this post because it is somewhat informed by a <strong>fun attempt to construct a 3/3 protocol</strong> using the Lagrange basis, failing at it, and then thinking about where it failed. <img class="emoji" title=":smile:" alt=":smile:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f604.png" height="20" width="20">
+$\newcommand{\uni}{\mathsf{uni}}
+\newcommand{\unex}{\mathsf{unex}}
+\newcommand{\mlin}{\mathsf{mlin}}
+\newcommand{\mlex}{\mathsf{mlex}}$</p>
+
+<h2 id="results">Results</h2>
+<p>I did get the following results that are best described <a href="https://arxiv.org/pdf/2505.00554">in the accompanying PDF</a> and which I think are kind of cool even if they do not answer the starting question affirmatively:</p>
+<ul>
+  <li>a new way of applying the sumcheck protocol to univariate polynomials, that is, an oracle-free linear-prover interactive reduction from univariate sumcheck ($\sum_i g(f_1(w^i), \dots, f_d(w^i))$) to multilinear evaluation ($\mlin(f_1)(r), \dots, \mlin(f_d)(r)$),</li>
+  <li>a new linear-prover polylog-verifier <em>single-round</em> reduction from multilinear evaluation ($\mlin(f)(r)$) to univariate evaluation ($f(t)$) that uses intermediary oracles.</li>
+</ul>
+
+<p>Here, $\mlin(f_j)$ is the multilinear polynomial with the same monomial coefficients as $f_j$.
+This is different from what you would get if you applied the multivariate sumcheck protocol directly to $\sum_i g(f_1(w^i), \dots, f_d(w^i))$.
+Then, you’d end up having to evaluate the multilinear extension polynomials of the vectors $(f_j(1), f_j(w), \dots)$ which is not exactly the same as evaluating $\mlin(f_j)$.</p>
+
+<h2 id="motivation">Motivation</h2>
+<p>While learning about SNARKs, I often came across what turns out to be a somewhat misleading dichotomy, strictly speaking:
+namely, there was an impression that SNARKs would have to <em>either</em></p>
+<ul>
+  <li>encode the to-be-proven computation using univariate polynomials and then rely on quotienting techniques, <em>or</em>
+</li>
+  <li>encode the to-be-proven computation using multilinear polynomials and then use the sumcheck protocol.</li>
+</ul>
+
+<p>In another post, I plan to cover multivariate quotienting. <img class="emoji" title=":shushing_face:" alt=":shushing_face:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f92b.png" height="20" width="20"></p>
+
+<p>In this post, I want to address the question of whether there is a proper univariate analogue of the multivariate sumcheck protocol.
+I’m arbitrarily defining “proper” as sending no intermediary oracles (neither quotients nor anything else) and having a linear-time prover implementation like the multivariate sumcheck protocol.</p>
+
+<h2 id="initial-expectations">Initial expectations</h2>
+<p>The initial idea was based on the good old - emphasis on <em>old</em> - intuition that univariate polynomials are  “nicer” than multivariate ones.
+After all, they form a principal ideal domain which multivariates do not.
+After all, there is a reason why <a href="https://eudml.org/doc/148487">Kronecker thought in the 1880s (page 11-12)</a> that multivariate problems generally become more tractable if they can be translated to univariate problems.
+This is also why we refer to his technique of mapping a multivariate polynomial like $M(x,y)$ to the univariate polynomial $U(x) = \uni(M) = M(x, x^{\deg_x(M)+1})$, which has the same coefficients, as <em>Kronecker substitution</em>.
+We also know that univariates defined over <em>roots of unity</em> should definitely allow for efficient recursive algorithms since this is what lead <a href="https://www.cis.rit.edu/class/simg716/Gauss_History_FFT.pdf">Gauss, around 1805,</a> to the first description of the FFT.
+Finally, univariate polynomials are used in the Reed-Solomon code, which is a great code when the finite field is large enough.</p>
+
+<p>A priori, I’d take this as ample grounds to guess that univariate polynomials should have some kind of analogue of the sumcheck protocol – because… well, why shouldn’t they? <img class="emoji" title=":shrug:" alt=":shrug:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f937.png" height="20" width="20"></p>
+
+<h2 id="notations">Notations</h2>
+<p>Let $H$ be the multiplicative subgroup that consists of the $2^m$th roots of unity ${1, w, \dots, w^{2^m-1}}$.
+If $U$ is a univariate polynomial in $x$, the coefficient before $x^i$ is denoted as $U[i]$.
+If $M$ is an $m$-variate polynomial in $x_1, \dots, x_m$, the coefficient before $x_1^{i_1} \cdots x_m^{i_m}$ is denoted as $M[i]$, where $i$ is the integer with digit decomposition $i_1, \dots, i_m$ where $i_1$ is the least significant digit (in <a href="https://en.wikipedia.org/wiki/Mixed_radix">mixed-radix</a>, ie,
+$i = \sum_{j \in [m]} i_j \cdot \prod_{k \in [j-1]} (\deg_{x_k}(M)+1)$).
+We also define the following polynomials:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Polynomial</th>
+      <th>Definition</th>
+      <th> </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$\uni(v)$</td>
+      <td>$\uni(v)(x) = \sum_i v_i x^i$</td>
+      <td>Univariate polynomial with coefficient vector $v$</td>
+    </tr>
+    <tr>
+      <td>$\uni(M)$</td>
+      <td>$\uni(M)(x) = \sum_i M[i] x^i$</td>
+      <td>Univariate polynomial with the same coefficient vector as the multivariate polynomial $M$ (Kronecker substitution)</td>
+    </tr>
+    <tr>
+      <td>$\unex(v)$</td>
+      <td>$\unex(v)(w^i) = v_i$</td>
+      <td>Univariate extension polynomial (wrt $H$) of the vector $v$</td>
+    </tr>
+    <tr>
+      <td>$\mlin(U)$</td>
+      <td>$\mlin(U)(x_1, \dots, x_m)$ $= \sum_i U[i] x_1^{i_1} \cdots x_m^{i_m}$</td>
+      <td>Multilinear polynomial with the same coefficient vector as the univariate polynomial $U$</td>
+    </tr>
+    <tr>
+      <td>$\mlex_D(v)$</td>
+      <td>$\mlex_D(v)(i_1, \dots, i_m) = v_i$</td>
+      <td>Multilinear extension polynomial (wrt domain $D$) of the vector $v$</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="existing-works">Existing works</h2>
+<p>Let me highlight three related works as points of comparison for my univariate sumcheck idea.
+First, <a href="https://eprint.iacr.org/2022/420.pdf">Bootle et al.’s Eurocrypt 2022 paper Gemini</a> contains (among other things) a 2-phase IOP where, in the first phase (henceforth, Gemini-1), constraint satisfiability is reduced to multilinear evaluation and then, in the second phase (henceforth, Gemini-2), multilinear evaluation is reduced to univariate evaluation.
+Next, there is the combo of Spartan and the HyperKZG commitment scheme described in <a href="https://eprint.iacr.org/2024/2099">Zhao et al.’s MicroNova paper</a>.
+Here, constraint satisfiability is also reduced to multilinear evaluation (this is Spartan, abstracting away details) and multilinear evaluation is then also reduced to univariate evaluation (HyperKZG) – however, the univariate oracle that gets evaluated is different from Gemini, it’s easier to instantiate.
+Finally, there is the protocol by <a href="https://hackmd.io/@relgabizon/ryGTQXWri">Gabizon et al.</a> which reduces univariate polynomial indentitites over roots of unity to univariate evaluation.
+This is related because such polynomial identities capture constraint satisfiability when the polynomials interpolate the satisfying assignment vector and, furthermore, checking domain identities is a generalization of univariate sumcheck.</p>
+
+<p>All of the above protocols have a very similar structure.
+The difference I want to point out regards the kind of univariate polynomial oracle that gets queried.
+Denoting the witness vector (effectively the satisfying assignment for the constraint system) as $v$, the picture looks like this:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>Evaluated multilinear</th>
+      <th>Required  oracle</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Gemini-1 + Gemini-2</td>
+      <td>$\mlex_{{\pm 1}^m}(v)$</td>
+      <td>$\uni(\mlex_{{\pm 1}^m}(v))$</td>
+    </tr>
+    <tr>
+      <td>Spartan + HyperKZG</td>
+      <td>$\mlex_{{0,1}^m}(v)$</td>
+      <td>$\uni(v)$</td>
+    </tr>
+    <tr>
+      <td>Gabizon et al.</td>
+      <td>none (explicitly)</td>
+      <td>$\unex(v)$</td>
+    </tr>
+    <tr>
+      <td>My protocols</td>
+      <td>$\mlin(\unex(v))$</td>
+      <td>$\unex(v)$</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I’d argue that the Gabizon et al. protocol implicitly performs a multilinear evaluation of $\mlin(\unex(v))$ just like mine, so the two protcols seem equivalent (mine probably being worse by concrete constants?).
+But by making the 2-phase structure explicit, I’d say there is an advantage from being able to easily batch together multiple executions of the second phase.</p>
+
+<p>Next, I’ll briefly go over my protocols and show what I think is interesting about them, namely <strong>how an attempt to “stay univariate” still ended up having to evaluate $\mlin(\unex(v))$</strong>.</p>
+
+<h2 id="new-protocols">New protocol(s)</h2>
+<p>My protocols are constructed somewhat differently than prior ones, though they seem to lead to comparable outcomes as stated above.
+Specifically, all my protocols are consequences of applying the standard sumcheck protocol to <em>univariate</em> polynomials in a particular way.
+<a href="https://arxiv.org/pdf/2505.00554">The PDF</a> explains it better but the high-level flow is as follows.</p>
+<ul>
+  <li>We fix a domain $H’$ for which there is a polynomial map $\varphi$ such that the image of $H’$ under $\varphi$ is $H$.</li>
+  <li>We then define multivariate polynomials whose sum over $H’$ is the same as our univariates’ sum over $H$ by composing the univariate polynomials with $\varphi$ (this might be called a <a href="https://en.wikipedia.org/wiki/Pullback_(differential_geometry)">pullback</a>).</li>
+  <li>Running the multivariate sumcheck protocol on these multivariates leads to round polynomials which just so happen to be small enough to be sent explicitly at the start. However, their degree doubles each round, leaving us with two choices: <em>either</em>
+    <ul>
+      <li>we send them as oracles, in which case the final claim is a simple univariate evaluation of $g(f_1(\varphi(r)), \dots, f_d(\varphi(r)))$ (but instantiating these oracles seems complicated, especially for a linear-time prover…), <em>or</em>
+</li>
+      <li>we observe that the round polynomials can be equivalently expressed by lower-degree polynomials if we perform a <em>modulo reduction</em>, in which case the final claim magically turns into a multilinear evaluation. <img class="emoji" title=":astonished:" alt=":astonished:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f632.png" height="20" width="20">
+</li>
+    </ul>
+  </li>
+  <li>Multilinear evaluation is a special case of univariate sumcheck, an inner product, when we carefully construct a certain kind of Lagrange basis polynomial.</li>
+  <li>Therefore, we run the same protocol twice overall (like Gemini’s two phases). First, the protocol <em>without oracles</em> reduces the univariate sumcheck claim into a multilinear evaluation. Then, the version of the protocol <em>with oracles</em> reduces multilinear evaluation to univariate evaluation.</li>
+</ul>
+
+<p>I intentionally kept this overview brief because further details are anyway <a href="https://arxiv.org/pdf/2505.00554">in the PDF</a>.</p>
+
+<p>Before concluding, I just want to drop a few basic facts that make it kind of obvious-in-hindsight why this attempt of “staying univariate” still ended in a multilinear evaluation.
+$\newcommand{\low}{\mathsf{low}}
+\newcommand{\high}{\mathsf{high}}
+\newcommand{\even}{\mathsf{even}}
+\newcommand{\odd}{\mathsf{odd}}
+\newcommand{\fold}{\mathsf{Fold}}$</p>
+
+<h2 id="basic-facts">Basic facts</h2>
+<p>If $f$ is a univariate polynomial of degree at most $2^m-1$, let’s denote the even-odd and low-high decompositions of $f$ as</p>
+
+\[\begin{align*}
+f(x) &amp;= f^{\low}(x) + x^{2^{m-1}} f^{\high}(x) \\
+        &amp;= f^{\even}(x^2) + x f^{\odd}(x^2).
+\end{align*}\]
+
+<p>When keeping track of the coefficients during modulo reduction, one sees that the remainder of $f$ modulo $x^{2^{m-1}}-r$ is</p>
+
+\[f \% (x^{2^{m-1}} - r) = f^{\low} + r f^{\high}.\]
+
+<p>Let’s also introduce the following notation for even-odd folding,</p>
+
+\[\fold[r](f) = f^{\even} + r f^{\odd},\]
+
+<p>which Gemini, HyperKZG etc. all perform internally.
+Next, let’s recall what folding and taking remainders do to evaluations.
+First, we know that the even part and odd parts’ values on squares (in particular, on $2^{m-1}$th roots of unity) are</p>
+
+\[\begin{align*}
+f^{\even}(w^{2i}) = \frac{f(w^i) + f(-w^i)}{2} \qquad\qquad f^{\odd}(w^{2i}) = \frac{f(w^i) - f(-w^i)}{2 w^i}.
+\end{align*}\]
+
+<p>And for modulo reduction, we know that the remainders of $f$ modulo $x^{2^{m-1}} \pm 1$ take the same values as $f$ on the $2^{m-1}$th roots of unity and of their $w$-coset (because those are the respective vanishing sets of $x^{2^{m-1}} \pm 1$).</p>
+
+<p>The similarities of the two ways of folding do not end there.
+From keeping track of coefficients, it can be seen that they relate to multilinear reinterpretation as:</p>
+
+\[\begin{align*}
+\mlin(f) &amp;= (\mlin(f^{\low}) + x_m \mlin(f^{\high}))(x_1, \dots, x_{m-1}) \\
+         &amp;= (\mlin(f^{\even}) + x_1 \mlin(f^{\odd}))(x_2, \dots, x_m).
+\end{align*}\]
+
+<p>Finally, when carrying out $m$ steps of folding for any $r_1, \dots, r_m$, this means</p>
+
+\[\begin{align*}
+(\cdots (f \% (x^{2^{m-1}}-r_m)\cdots) \% (x-r_1) &amp;= \fold[r_m](\cdots \fold[r_1](f) \cdots) \\
+                          &amp;= \mlin(f)(r_1, \dots, r_m).
+\end{align*}\]
+
+<h2 id="lessons-learned">Lessons learned</h2>
+<p>When starting with univariate polynomials, I expected the outcome of a sumcheck-type reduction to be a nice and simple univariate evaluation.
+But, (not?) surprisingly, by using the sumcheck protocol, the requirement for multilinear evaluation comes naturally as a consequence of the interactive reduction pattern and nothing else.
+That is, in each round the verifier’s randomness must reduce the sumcheck claim to a claim about a smaller domain.
+But both straightforward ways of splitting up a univariate polynomial into two smaller parts automatically boils down to re-interpreting the polynomial as a multilinear polynomial, hence why the reduction ends in a multilinear evaluation.</p>
+
+<p>Multivariate evaluation, in turn, is a strictly more powerful operation than univariate evaluation.
+This can be seen from different angles, for example:</p>
+<ul>
+  <li>Multivariate evaluation corresponds to performing multiple independent modulo reductions in sequence whereas univariate evaluation is a single one.</li>
+  <li>Multivariate oracles can be used as univariate oracles but not vice versa.</li>
+</ul>
+
+<p>This way, a multivariate oracle is like many univariate oracles in one.</p>
+
+<p>So, at least in my mind, this is why it makes sense that there is probably no way to get rid of the intermediary oracles in sumcheck-like reduction protocols. <img class="emoji" title=":smiley:" alt=":smiley:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f603.png" height="20" width="20"></p>
+
+  </div>
+<a class="u-url" href="/univariate-sumcheck/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+
+      <div class="footer-col footer-col-1">
+<ul class="social-media-list">
+<li><a href="mailto:m%40mal.com.de"><svg class="svg-icon"><use xlink:href="/assets/mail-icon.svg#mail"></use></svg> <span class="username">m@mal.com.de</span></a></li>
+<li><a href="https://github.com/malcom-mo"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">malcom-mo</span></a></li>
+</ul>
+© 2025
+        Malcom Mohamed
+      </div>
+
+    </div>
+  </div>
+</footer>
+</body>
+
+</html>
