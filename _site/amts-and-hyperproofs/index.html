@@ -37,7 +37,7 @@ window.MathJax = {
   async
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
-<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"zEgcLDjumonNF3sPWwMwgSB07heMOEQtrRLEu1WvuTfTm+U6d8vPIXP9OrL0TVLWL8FL2hgPjUI0fqd708ZCCw=="}</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"gwF6mlpLqlaJD1iyHSl60oaqdnlbK2Q75HNjDEH8huqDyMzQZPCwNXiTTy8N5gkC2fPWaeLJlNHQ+GpQVU8eBg=="}</script>
 </head>
 <body><header class="site-header" role="banner">
 
@@ -190,7 +190,7 @@ For example, the following Sage code outputs a Gröbner basis of 10 elements for
 But because the point ideals are maximal, their intersection is the same as their product.</em></p>
 
 <p>To avoid such big Gröbner bases, it turns out we can just change our interpolation set from $\{0,1\}^m$ to another.
-For example, let’s go back to the Hyperproofs variant that produces AMT proofs under Kronecker substitution and interpolate over \(D = \left\\{\left(w^i, w^{2i}, \dots, w^{2^{m-1} i}\right)\right\\}.\)
+For example, let’s go back to the Hyperproofs variant that produces AMT proofs under Kronecker substitution and interpolate over \(D = \left\\{(w^i, w^{2i}, \dots, w^{2^{m-1} i})\right\\}.\)
 What is so special about $D$?
 It turns out that the fact that all points in $D$ differ in the first coordinate forces a simple structure for the reduced Gröbner basis of the ideal of any subset $V \subseteq D$.
 Namely, let $g_1(x_1)$ vanish on the first coordinates, $g_1 = \prod_{v \in V} (x_1-v_1)$, and let $g_i(x_1)$ interpolate the $i$th coordinates over the first coordinates, $g_i(v_1) = v_i$ for all $v \in V, i \in [2,m]$.
