@@ -126,7 +126,7 @@ But because the point ideals are maximal, their intersection is the same as thei
 To avoid such big Gröbner bases, it turns out we can just change our interpolation set from $\\{0,1\\}^m$ to another.
 For example, let’s go back to the Hyperproofs variant that produces AMT proofs under Kronecker substitution and interpolate over
 
-$$D = \{(w^i, w^{2i}, \dots, w^{2^{m-1} i})\}.$$
+$$D = \left\{(w^i, w^{2i}, \dots, w^{2^{m-1} i})\right\}.$$
 
 What is so special about $D$?
 It turns out that the fact that all points in $D$ differ in the first coordinate forces a simple structure for the reduced Gröbner basis of the ideal of any subset $V \subseteq D$.
