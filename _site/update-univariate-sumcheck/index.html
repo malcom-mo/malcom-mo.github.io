@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Update to Univariate Sumcheck | Malcom Mohamed</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Update to Univariate Sumcheck" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="ZK papers often make a “univariate vs multilinear” distinction that seems to come from the sumcheck protocol, which is naturally defined over multivariates. As discussed in a prior post, I wanted to explore whether there is a comparable protocol for univariates (without FFTs etc.)." />
+<meta property="og:description" content="ZK papers often make a “univariate vs multilinear” distinction that seems to come from the sumcheck protocol, which is naturally defined over multivariates. As discussed in a prior post, I wanted to explore whether there is a comparable protocol for univariates (without FFTs etc.)." />
+<link rel="canonical" href="https://mal.com.de/update-univariate-sumcheck/" />
+<meta property="og:url" content="https://mal.com.de/update-univariate-sumcheck/" />
+<meta property="og:site_name" content="Malcom Mohamed" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-10-09T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Update to Univariate Sumcheck" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2025-10-09T00:00:00+02:00","datePublished":"2025-10-09T00:00:00+02:00","description":"ZK papers often make a “univariate vs multilinear” distinction that seems to come from the sumcheck protocol, which is naturally defined over multivariates. As discussed in a prior post, I wanted to explore whether there is a comparable protocol for univariates (without FFTs etc.).","headline":"Update to Univariate Sumcheck","mainEntityOfPage":{"@type":"WebPage","@id":"https://mal.com.de/update-univariate-sumcheck/"},"url":"https://mal.com.de/update-univariate-sumcheck/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://mal.com.de/feed.xml" title="Malcom Mohamed" /><script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script type="text/javascript"
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="application/json" id="dkic-signature">{"alg":"ed25519","signature":"oclWxThnVsWIVgVRhWsm5VYqmJQ9enYw+WFmkC8kuHC0NVnGc4ATUMhwLsCPS//M2vtYGnVVEc1CAPuF6uH5DQ=="}</script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Malcom Mohamed</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Update to Univariate Sumcheck</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-10-09T00:00:00+02:00" itemprop="datePublished">09 Oct 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>ZK papers often make a “univariate vs multilinear” distinction that seems to come from the sumcheck protocol, which is naturally defined over multivariates.
+As discussed in a <a href="">prior post</a>, I wanted to explore whether there is a comparable protocol for univariates (without FFTs etc.).</p>
+
+<p>However, I’ve come to think my earlier idea contained a flaw – the linear-time FFT-free prover probably cannot be realized after all.</p>
+
+<p>A rethink was needed.</p>
+
+<p>This ultimately resulted in a <a href="https://arxiv.org/pdf/2505.00554">new version of the work</a>, that now includes <em>two</em> approaches, in which I have much more confidence.</p>
+
+<p>The first one is a way to use the multivariate sumcheck protocol for univariates in Lagrange basis.
+Specifically, it is a new “adaptor” to emulate multilinear extensions with univariate extensions (linear-time unlike, eg, the approach from the <a href="https://eprint.iacr.org/2023/1284.pdf">Logup-GKR paper</a>).</p>
+
+<p>The other is a reduction from univariate sumcheck to Gemini, building on <a href="https://hackmd.io/@relgabizon/ryGTQXWri">this post</a>.</p>
+
+<p>Interestingly, in both protocols, the reduction and the multilinear evaluation perfectly align.
+This means they can be early-stopped any time and the remaining claim can be handled with Aurora.
+Because Aurora is run on a small instance, the prover is still linear-time overall.
+Of course, this isn’t a new idea but I find it noteworthy how <em>easy</em> and naturally it comes here (other published papers need extra translation steps!).</p>
+
+  </div><a class="u-url" href="/update-univariate-sumcheck/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+
+      <div class="footer-col footer-col-1"><ul class="social-media-list"><li><a href="mailto:m%40mal.com.de"><svg class="svg-icon"><use xlink:href="/assets/mail-icon.svg#mail"></use></svg> <span class="username">m@mal.com.de</span></a></li><li><a href="https://github.com/malcom-mo"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">malcom-mo</span></a></li></ul>
+&copy; 2025
+        Malcom Mohamed
+      </div>
+
+    </div>
+  </div>
+</footer>
+</body>
+
+</html>
